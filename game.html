@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>天玄录 - 武侠文字冒险</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Microsoft YaHei', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh; color: #e0e0e0;
+        }
+        .container { max-width: 900px; margin: 0 auto; padding: 10px; }
+        .header { 
+            background: linear-gradient(90deg, #8b5a2b, #d4a574, #8b5a2b);
+            padding: 15px; text-align: center; border-radius: 10px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(139, 90, 43, 0.4);
+        }
+        .header h1 { 
+            color: #fff; font-size: 28px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            font-weight: bold; letter-spacing: 3px;
+        }
+        .header .subtitle { color: #ffe4c4; font-size: 14px; margin-top: 5px; }
+        .stats-bar {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px; margin-bottom: 15px;
+        }
+        .stat-item {
+            background: rgba(0,0,0,0.4); border-radius: 8px; padding: 8px;
+            border: 1px solid rgba(139, 90, 43, 0.5);
+        }
+        .stat-label { font-size: 11px; color: #999; margin-bottom: 3px; }
+        .stat-bar { 
+            height: 8px; background: #333; border-radius: 4px; overflow: hidden;
+        }
+        .stat-fill { height: 100%; transition: width 0.3s; border-radius: 4px; }
+        .stat-fill.health { background: linear-gradient(90deg, #dc3545, #ff6b6b); }
+        .stat-fill.hunger { background: linear-gradient(90deg, #fd7e14, #ffc107); }
+        .stat-fill.thirst { background: linear-gradient(90deg, #0dcaf0, #17a2b8); }
+        .stat-fill.energy { background: linear-gradient(90deg, #198754, #20c997); }
+        .stat-fill.sanity { background: linear-gradient(90deg, #6f42c1, #9d4edd); }
+        .stat-value { font-size: 12px; text-align: right; margin-top: 2px; color: #ccc; }
+        .info-bar {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;
+            background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;
+            font-size: 13px;
+        }
+        .info-item { display: flex; align-items: center; gap: 5px; }
+        .info-item .icon { font-size: 16px; }
+        .main-panel {
+            background: rgba(20, 20, 35, 0.9); border-radius: 12px;
+            border: 2px solid rgba(139, 90, 43, 0.6); overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        .tabs {
+            display: flex; background: rgba(0,0,0,0.5); border-bottom: 1px solid rgba(139, 90, 43, 0.4);
+        }
+        .tab {
+            flex: 1; padding: 12px; text-align: center; cursor: pointer;
+            transition: all 0.3s; font-size: 14px; border: none; background: none; color: #999;
+        }
+        .tab:hover { background: rgba(139, 90, 43, 0.2); color: #d4a574; }
+        .tab.active { background: rgba(139, 90, 43, 0.3); color: #ffd700; border-bottom: 2px solid #d4a574; }
+        .tab-content { display: none; padding: 15px; min-height: 400px; max-height: 60vh; overflow-y: auto; }
+        .tab-content.active { display: block; }
+        .story-log { }
+        .story-entry {
+            padding: 12px; margin-bottom: 10px; border-radius: 8px;
+            background: rgba(0,0,0,0.3); border-left: 3px solid #8b5a2b;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .story-entry.dialogue { border-left-color: #17a2b8; }
+        .story-entry.combat { border-left-color: #dc3545; }
+        .story-entry.discovery { border-left-color: #28a745; }
+        .story-entry.system { border-left-color: #6c757d; font-size: 12px; color: #888; }
+        .story-time { font-size: 11px; color: #666; margin-bottom: 5px; }
+        .story-text { line-height: 1.7; }
+        .choices {
+            display: flex; flex-direction: column; gap: 8px; margin-top: 15px;
+            padding-top: 15px; border-top: 1px solid rgba(139, 90, 43, 0.3);
+        }
+        .choice-btn {
+            padding: 12px 15px; background: rgba(139, 90, 43, 0.2);
+            border: 1px solid rgba(139, 90, 43, 0.5); border-radius: 8px;
+            color: #d4a574; cursor: pointer; transition: all 0.3s;
+            text-align: left; font-size: 14px;
+        }
+        .choice-btn:hover {
+            background: rgba(139, 90, 43, 0.4); transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(139, 90, 43, 0.3);
+        }
+        .input-area {
+            display: flex; gap: 8px; padding: 15px;
+            background: rgba(0,0,0,0.4); border-top: 1px solid rgba(139, 90, 43, 0.3);
+        }
+        .input-area input {
+            flex: 1; padding: 12px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(139, 90, 43, 0.5); border-radius: 8px;
+            color: #fff; font-size: 14px;
+        }
+        .input-area input:focus { outline: none; border-color: #d4a574; }
+        .input-area button {
+            padding: 12px 20px; background: linear-gradient(135deg, #8b5a2b, #d4a574);
+            border: none; border-radius: 8px; color: #fff; cursor: pointer;
+            font-size: 14px; font-weight: bold; transition: all 0.3s;
+        }
+        .input-area button:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(139, 90, 43, 0.5); }
+        .quick-actions {
+            display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 15px;
+            background: rgba(0,0,0,0.3);
+        }
+        .quick-btn {
+            padding: 8px 12px; background: rgba(139, 90, 43, 0.15);
+            border: 1px solid rgba(139, 90, 43, 0.4); border-radius: 6px;
+            color: #d4a574; cursor: pointer; font-size: 12px; transition: all 0.2s;
+        }
+        .quick-btn:hover { background: rgba(139, 90, 43, 0.3); }
+        .inventory-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;
+        }
+        .item-card {
+            background: rgba(0,0,0,0.4); border-radius: 8px; padding: 10px;
+            border: 1px solid rgba(139, 90, 43, 0.4); cursor: pointer; transition: all 0.2s;
+        }
+        .item-card:hover { border-color: #d4a574; transform: translateY(-2px); }
+        .item-name { font-size: 13px; color: #d4a574; margin-bottom: 5px; }
+        .item-desc { font-size: 11px; color: #888; }
+        .item-qty { font-size: 11px; color: #666; margin-top: 5px; }
+        .npc-list { display: flex; flex-direction: column; gap: 10px; }
+        .npc-card {
+            background: rgba(0,0,0,0.4); border-radius: 8px; padding: 12px;
+            border: 1px solid rgba(139, 90, 43, 0.4); display: flex; align-items: center; gap: 12px;
+        }
+        .npc-avatar { 
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, #8b5a2b, #d4a574);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .npc-info { flex: 1; }
+        .npc-name { font-size: 14px; color: #d4a574; font-weight: bold; }
+        .npc-desc { font-size: 12px; color: #888; margin-top: 3px; }
+        .npc-actions { display: flex; gap: 5px; }
+        .npc-actions button {
+            padding: 5px 10px; background: rgba(139, 90, 43, 0.2);
+            border: 1px solid rgba(139, 90, 43, 0.4); border-radius: 4px;
+            color: #d4a574; cursor: pointer; font-size: 11px;
+        }
+        .ai-section { padding: 15px; }
+        .ai-config {
+            background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; margin-bottom: 15px;
+        }
+        .ai-config h3 { color: #d4a574; margin-bottom: 10px; font-size: 14px; }
+        .ai-config input, .ai-config select {
+            width: 100%; padding: 10px; margin-bottom: 10px;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(139, 90, 43, 0.4);
+            border-radius: 6px; color: #fff; font-size: 13px;
+        }
+        .ai-config button {
+            padding: 10px 20px; background: linear-gradient(135deg, #8b5a2b, #d4a574);
+            border: none; border-radius: 6px; color: #fff; cursor: pointer;
+        }
+        .ai-chat { display: flex; flex-direction: column; gap: 10px; }
+        .chat-msg {
+            padding: 10px 15px; border-radius: 12px; max-width: 85%;
+            animation: fadeIn 0.3s ease;
+        }
+        .chat-msg.user {
+            background: linear-gradient(135deg, #8b5a2b, #a0522d);
+            align-self: flex-end; border-bottom-right-radius: 4px;
+        }
+        .chat-msg.ai {
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(139, 90, 43, 0.3);
+            align-self: flex-start; border-bottom-left-radius: 4px;
+        }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 2px solid #d4a574; border-radius: 12px; padding: 25px;
+            max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+        }
+        .modal h2 { color: #d4a574; margin-bottom: 15px; text-align: center; }
+        .modal-close {
+            position: absolute; top: 10px; right: 15px; font-size: 24px;
+            color: #888; cursor: pointer;
+        }
+        .cultivation-info {
+            background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px;
+            border: 1px solid rgba(139, 90, 43, 0.4);
+        }
+        .realm-title { font-size: 18px; color: #ffd700; text-align: center; margin-bottom: 10px; }
+        .realm-desc { font-size: 13px; color: #aaa; text-align: center; margin-bottom: 15px; }
+        .martial-arts { display: flex; flex-wrap: wrap; gap: 8px; }
+        .martial-tag {
+            padding: 5px 12px; background: rgba(139, 90, 43, 0.3);
+            border-radius: 15px; font-size: 12px; color: #d4a574;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        ::-webkit-scrollbar-thumb { background: #8b5a2b; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🏯 天玄录</h1>
+            <div class="subtitle">武侠文字冒险 · 高武玄幻世界</div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-label">❤️ 气血</div>
+                <div class="stat-bar"><div class="stat-fill health" id="healthBar" style="width: 100%"></div></div>
+                <div class="stat-value"><span id="healthVal">100</span>/100</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">🍖 饱腹</div>
+                <div class="stat-bar"><div class="stat-fill hunger" id="hungerBar" style="width: 80%"></div></div>
+                <div class="stat-value"><span id="hungerVal">80</span>/100</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">💧 口渴</div>
+                <div class="stat-bar"><div class="stat-fill thirst" id="thirstBar" style="width: 70%"></div></div>
+                <div class="stat-value"><span id="thirstVal">70</span>/100</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">⚡ 精力</div>
+                <div class="stat-bar"><div class="stat-fill energy" id="energyBar" style="width: 90%"></div></div>
+                <div class="stat-value"><span id="energyVal">90</span>/100</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">🧘 心境</div>
+                <div class="stat-bar"><div class="stat-fill sanity" id="sanityBar" style="width: 85%"></div></div>
+                <div class="stat-value"><span id="sanityVal">85</span>/100</div>
+            </div>
+        </div>
+
+        <div class="info-bar">
+            <div class="info-item"><span class="icon">🕐</span><span id="timeDisplay">辰时 · 早晨</span></div>
+            <div class="info-item"><span class="icon">📅</span><span id="dateDisplay">元景三年四月十二</span></div>
+            <div class="info-item"><span class="icon">☀️</span><span id="weatherDisplay">晴朗 18°C</span></div>
+            <div class="info-item"><span class="icon">📍</span><span id="locationDisplay">青石镇·街道</span></div>
+            <div class="info-item"><span class="icon">💰</span><span id="moneyDisplay">3两 50文</span></div>
+            <div class="info-item"><span class="icon">⭐</span><span id="realmDisplay">凡人</span></div>
+        </div>
+
+        <div class="main-panel">
+            <div class="tabs">
+                <button class="tab active" data-tab="story">📜 故事</button>
+                <button class="tab" data-tab="inventory">🎒 物品</button>
+                <button class="tab" data-tab="npcs">👥 人物</button>
+                <button class="tab" data-tab="cultivation">🧘 修炼</button>
+                <button class="tab" data-tab="ai">🤖 AI</button>
+            </div>
+
+            <div class="tab-content active" id="story-tab">
+                <div class="story-log" id="storyLog">
+                    <div class="story-entry">
+                        <div class="story-time">辰时 · 元景三年四月十二</div>
+                        <div class="story-text">
+                            晨曦微露，青石镇渐渐苏醒。你睁开眼，发现自己躺在一条幽暗的巷子里，浑身酸痛，脑海中一片混乱。<br><br>
+                            前世的记忆与这具身体原主的残留意识交织在一起——你，一个现代人，竟穿越到了这个名为"天玄大陆"的高武世界，附身在一个快要饿死的十五岁小乞丐身上。<br><br>
+                            远处传来早市的喧嚣声，空气中飘来一丝包子的香味，你的肚子不争气地叫了起来。<br><br>
+                            <em style="color: #888;">（你需要先填饱肚子，然后想办法在这个危机四伏的江湖中活下去...）</em>
+                        </div>
+                    </div>
+                </div>
+                <div class="choices" id="choices">
+                    <button class="choice-btn" onclick="selectChoice('去街上看看能不能找到些吃的')">🔍 去街上看看能不能找到些吃的</button>
+                    <button class="choice-btn" onclick="selectChoice('在巷子里继续休息，恢复体力')">😴 在巷子里继续休息，恢复体力</button>
+                    <button class="choice-btn" onclick="selectChoice('整理一下这具身体原主的记忆')">🧠 整理一下这具身体原主的记忆</button>
+                    <button class="choice-btn" onclick="selectChoice('观察周围环境，了解自己所处的位置')">👁️ 观察周围环境，了解自己所处的位置</button>
+                </div>
+            </div>
+
+            <div class="tab-content" id="inventory-tab">
+                <div class="inventory-grid" id="inventoryGrid">
+                    <div class="item-card" onclick="useItem('破烂衣衫')">
+                        <div class="item-name">👕 破烂衣衫</div>
+                        <div class="item-desc">勉强遮体的破旧衣服</div>
+                        <div class="item-qty">装备中</div>
+                    </div>
+                    <div class="item-card" onclick="useItem('碎银')">
+                        <div class="item-name">💰 碎银</div>
+                        <div class="item-desc">一些零散的铜钱</div>
+                        <div class="item-qty">50文</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="npcs-tab">
+                <div class="npc-list" id="npcList">
+                    <div class="npc-card">
+                        <div class="npc-avatar">👨</div>
+                        <div class="npc-info">
+                            <div class="npc-name">包子铺王掌柜</div>
+                            <div class="npc-desc">街角包子铺的老板，为人和善</div>
+                        </div>
+                        <div class="npc-actions">
+                            <button onclick="talkToNPC('王掌柜')">交谈</button>
+                            <button onclick="tradeWithNPC('王掌柜')">交易</button>
+                        </div>
+                    </div>
+                    <div class="npc-card">
+                        <div class="npc-avatar">👴</div>
+                        <div class="npc-info">
+                            <div class="npc-name">老乞丐</div>
+                            <div class="npc-desc">在镇上乞讨多年的老人，似乎知道很多事</div>
+                        </div>
+                        <div class="npc-actions">
+                            <button onclick="talkToNPC('老乞丐')">交谈</button>
+                        </div>
+                    </div>
+                    <div class="npc-card">
+                        <div class="npc-avatar">👧</div>
+                        <div class="npc-info">
+                            <div class="npc-name">卖花女孩</div>
+                            <div class="npc-desc">一个卖野花的小姑娘，眼神清澈</div>
+                        </div>
+                        <div class="npc-actions">
+                            <button onclick="talkToNPC('卖花女孩')">交谈</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="cultivation-tab">
+                <div class="cultivation-info">
+                    <div class="realm-title">🌟 凡人</div>
+                    <div class="realm-desc">尚未踏入修炼之途，筋骨未开</div>
+                    <div style="margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+                        <div style="font-size: 12px; color: #888; margin-bottom: 5px;">修炼进度</div>
+                        <div class="stat-bar"><div class="stat-fill sanity" style="width: 5%"></div></div>
+                        <div style="font-size: 11px; color: #666; margin-top: 3px;">5/100 · 距离锻体境还需95点</div>
+                    </div>
+                    <h4 style="color: #d4a574; margin: 15px 0 10px;">已学武学</h4>
+                    <div class="martial-arts">
+                        <span class="martial-tag">📖 无</span>
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="choice-btn" onclick="cultivate()" style="width: 100%;">🧘 打坐修炼（消耗1时辰）</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="ai-tab">
+                <div class="ai-section">
+                    <div class="ai-config">
+                        <h3>🤖 AI配置（SiliconFlow）</h3>
+                        <input type="password" id="apiKey" placeholder="输入API密钥...">
+                        <select id="aiModel">
+                            <option value="Qwen/Qwen2.5-7B-Instruct">Qwen2.5-7B (免费)</option>
+                            <option value="deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</option>
+                            <option value="THUDM/glm-4-9b-chat">GLM-4-9B (免费)</option>
+                        </select>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="testAPI()">测试连接</button>
+                            <button onclick="saveAPIConfig()">保存配置</button>
+                        </div>
+                        <div id="apiStatus" style="margin-top: 10px; font-size: 12px; color: #888;"></div>
+                    </div>
+                    <div class="ai-chat" id="aiChat"></div>
+                    <div style="margin-top: 15px;">
+                        <button class="choice-btn" onclick="generateWithAI()" style="width: 100%;">
+                            🤖 用AI生成下一段剧情
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-actions">
+                <button class="quick-btn" onclick="quickAction('观察')">👁️ 观察</button>
+                <button class="quick-btn" onclick="quickAction('搜索')">🔍 搜索</button>
+                <button class="quick-btn" onclick="quickAction('休息')">😴 休息</button>
+                <button class="quick-btn" onclick="quickAction('前进')">🚶 前进</button>
+                <button class="quick-btn" onclick="quickAction('交谈')">💬 交谈</button>
+                <button class="quick-btn" onclick="quickAction('修炼')">🧘 修炼</button>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="playerInput" placeholder="输入你的行动..." onkeypress="if(event.key==='Enter')submitAction()">
+                <button onclick="submitAction()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">物品详情</h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态
+        const gameState = {
+            player: {
+                name: '无名小乞丐',
+                health: 100, maxHealth: 100,
+                hunger: 80, thirst: 70, energy: 90, sanity: 85,
+                silver: 0, copper: 50,
+                realm: '凡人', cultivationProgress: 5,
+                martialArts: []
+            },
+            time: { hour: 7, day: 12, month: 4, year: 3 },
+            weather: { type: '晴朗', temp: 18 },
+            location: '青石镇·巷子',
+            inventory: [
+                { name: '破烂衣衫', type: '衣物', desc: '勉强遮体的破旧衣服', equipped: true },
+                { name: '碎银', type: '货币', desc: '一些零散的铜钱', quantity: 50 }
+            ],
+            storyLog: [],
+            apiConfig: { key: '', model: 'Qwen/Qwen2.5-7B-Instruct' }
+        };
+
+        // 时辰名称
+        const timeNames = ['子时·夜半', '丑时·鸡鸣', '寅时·平旦', '卯时·日出', '辰时·早晨', '巳时·隅中', 
+                          '午时·日中', '未时·日昳', '申时·晡时', '酉时·日入', '戌时·黄昏', '亥时·人定'];
+
+        // 初始化
+        function init() {
+            const saved = localStorage.getItem('tianxuan_save');
+            if (saved) {
+                try {
+                    const data = JSON.parse(saved);
+                    Object.assign(gameState, data);
+                    updateUI();
+                    addStoryEntry('📜 读取存档成功，继续你的江湖之旅...', 'system');
+                } catch(e) { console.error('存档读取失败', e); }
+            }
+            const apiKey = localStorage.getItem('tianxuan_apikey');
+            if (apiKey) {
+                gameState.apiConfig.key = apiKey;
+                document.getElementById('apiKey').value = apiKey;
+            }
+            updateUI();
+        }
+
+        // 更新UI
+        function updateUI() {
+            const p = gameState.player;
+            document.getElementById('healthBar').style.width = (p.health / p.maxHealth * 100) + '%';
+            document.getElementById('hungerBar').style.width = p.hunger + '%';
+            document.getElementById('thirstBar').style.width = p.thirst + '%';
+            document.getElementById('energyBar').style.width = p.energy + '%';
+            document.getElementById('sanityBar').style.width = p.sanity + '%';
+            document.getElementById('healthVal').textContent = p.health;
+            document.getElementById('hungerVal').textContent = p.hunger;
+            document.getElementById('thirstVal').textContent = p.thirst;
+            document.getElementById('energyVal').textContent = p.energy;
+            document.getElementById('sanityVal').textContent = p.sanity;
+            
+            const timeIdx = Math.floor(gameState.time.hour / 2) % 12;
+            document.getElementById('timeDisplay').textContent = timeNames[timeIdx];
+            document.getElementById('dateDisplay').textContent = `元景${gameState.time.year}年${gameState.time.month}月${gameState.time.day}`;
+            document.getElementById('weatherDisplay').textContent = `${gameState.weather.type} ${gameState.weather.temp}°C`;
+            document.getElementById('locationDisplay').textContent = gameState.location;
+            document.getElementById('moneyDisplay').textContent = `${p.silver}两 ${p.copper}文`;
+            document.getElementById('realmDisplay').textContent = p.realm;
+            
+            saveGame();
+        }
+
+        // 保存游戏
+        function saveGame() {
+            localStorage.setItem('tianxuan_save', JSON.stringify(gameState));
+        }
+
+        // 标签切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + '-tab').classList.add('active');
+            });
+        });
+
+        // 添加故事条目
+        function addStoryEntry(text, type = 'narrative') {
+            const log = document.getElementById('storyLog');
+            const timeIdx = Math.floor(gameState.time.hour / 2) % 12;
+            const entry = document.createElement('div');
+            entry.className = `story-entry ${type}`;
+            entry.innerHTML = `
+                <div class="story-time">${timeNames[timeIdx]} · 元景${gameState.time.year}年${gameState.time.month}月${gameState.time.day}</div>
+                <div class="story-text">${text}</div>
+            `;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            gameState.storyLog.push({ text, type, time: Date.now() });
+        }
+
+        // 选择选项
+        function selectChoice(choice) {
+            addStoryEntry(`<em style="color:#d4a574;">» ${choice}</em>`, 'system');
+            processAction(choice);
+        }
+
+        // 快捷操作
+        function quickAction(action) {
+            document.getElementById('playerInput').value = action;
+            submitAction();
+        }
+
+        // 提交行动
+        function submitAction() {
+            const input = document.getElementById('playerInput');
+            const action = input.value.trim();
+            if (!action) return;
+            input.value = '';
+            addStoryEntry(`<em style="color:#d4a574;">» ${action}</em>`, 'system');
+            processAction(action);
+        }
+
+        // 处理行动
+        function processAction(action) {
+            const lowerAction = action.toLowerCase();
+            
+            // 消耗资源
+            gameState.player.hunger = Math.max(0, gameState.player.hunger - 2);
+            gameState.player.thirst = Math.max(0, gameState.player.thirst - 3);
+            gameState.player.energy = Math.max(0, gameState.player.energy - 1);
+            gameState.time.hour = (gameState.time.hour + 1) % 24;
+            if (gameState.time.hour === 0) gameState.time.day++;
+
+            // 简单的本地响应
+            if (lowerAction.includes('观察') || lowerAction.includes('看')) {
+                addStoryEntry('你环顾四周，这是青石镇的一条小巷，两旁是斑驳的土墙，地上散落着一些垃圾。远处能看到主街上人来人往，偶尔传来商贩的叫卖声。');
+            } else if (lowerAction.includes('休息') || lowerAction.includes('睡')) {
+                gameState.player.energy = Math.min(100, gameState.player.energy + 30);
+                addStoryEntry('你靠着墙壁闭目养神，疲惫的身体得到了些许恢复。一阵凉风吹过，让你打了个寒颤。');
+            } else if (lowerAction.includes('搜索') || lowerAction.includes('找')) {
+                if (Math.random() > 0.5) {
+                    gameState.player.copper += 5;
+                    addStoryEntry('你在角落里翻找，意外发现了几枚被人遗落的铜钱！（+5文）', 'discovery');
+                } else {
+                    addStoryEntry('你仔细搜索了一番，但什么也没找到。');
+                }
+            } else if (lowerAction.includes('修炼') || lowerAction.includes('打坐')) {
+                cultivate();
+            } else {
+                // 如果配置了AI，使用AI生成
+                if (gameState.apiConfig.key) {
+                    generateWithAI(action);
+                } else {
+                    addStoryEntry('（提示：配置AI密钥可以获得更丰富的剧情体验。前往"AI"标签页设置。）', 'system');
+                    updateChoices();
+                }
+            }
+            updateUI();
+        }
+
+        // 修炼
+        function cultivate() {
+            gameState.player.energy = Math.max(0, gameState.player.energy - 20);
+            gameState.player.cultivationProgress += Math.floor(Math.random() * 5) + 1;
+            gameState.time.hour = (gameState.time.hour + 2) % 24;
+            
+            if (gameState.player.cultivationProgress >= 100 && gameState.player.realm === '凡人') {
+                gameState.player.realm = '锻体境';
+                gameState.player.cultivationProgress = 0;
+                gameState.player.maxHealth += 20;
+                gameState.player.health = gameState.player.maxHealth;
+                addStoryEntry('🌟 <strong>突破！</strong>你感到体内有一股暖流涌动，筋骨似乎变得更加强健。你成功踏入了【锻体境】！', 'discovery');
+            } else {
+                addStoryEntry('你盘膝而坐，调整呼吸，尝试感受天地间的灵气。虽然收效甚微，但似乎对修炼之道有了些许领悟。');
+            }
+            updateUI();
+        }
+
+        // 更新选择
+        function updateChoices() {
+            const choices = document.getElementById('choices');
+            choices.innerHTML = `
+                <button class="choice-btn" onclick="selectChoice('继续探索这条街道')">🚶 继续探索这条街道</button>
+                <button class="choice-btn" onclick="selectChoice('找个地方休息一下')">😴 找个地方休息一下</button>
+                <button class="choice-btn" onclick="selectChoice('看看能不能找到吃的')">🔍 看看能不能找到吃的</button>
+                <button class="choice-btn" onclick="selectChoice('和路过的人打听消息')">💬 和路过的人打听消息</button>
+            `;
+        }
+
+        // 使用物品
+        function useItem(itemName) {
+            alert(`使用物品：${itemName}\n（完整版游戏中可以使用物品）`);
+        }
+
+        // 与NPC交谈
+        function talkToNPC(npcName) {
+            addStoryEntry(`你走向${npcName}，想要与其交谈...`);
+            if (gameState.apiConfig.key) {
+                generateWithAI(`我走向${npcName}，向他打招呼`);
+            } else {
+                addStoryEntry(`${npcName}看了你一眼，似乎在打量你这个衣衫褴褛的小乞丐。`, 'dialogue');
+            }
+        }
+
+        // 与NPC交易
+        function tradeWithNPC(npcName) {
+            alert(`与${npcName}交易\n（需要更多铜钱）`);
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            document.getElementById('itemModal').classList.remove('active');
+        }
+
+        // API配置
+        function saveAPIConfig() {
+            const key = document.getElementById('apiKey').value.trim();
+            const model = document.getElementById('aiModel').value;
+            if (key) {
+                gameState.apiConfig.key = key;
+                gameState.apiConfig.model = model;
+                localStorage.setItem('tianxuan_apikey', key);
+                document.getElementById('apiStatus').innerHTML = '✅ 配置已保存';
+            }
+        }
+
+        // 测试API
+        async function testAPI() {
+            const key = document.getElementById('apiKey').value.trim();
+            if (!key) {
+                document.getElementById('apiStatus').innerHTML = '❌ 请输入API密钥';
+                return;
+            }
+            document.getElementById('apiStatus').innerHTML = '⏳ 测试中...';
+            try {
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + key.replace(/[^\x00-\x7F]/g, '')
+                    },
+                    body: JSON.stringify({
+                        model: document.getElementById('aiModel').value,
+                        messages: [{ role: 'user', content: '你好' }],
+                        max_tokens: 50
+                    })
+                });
+                if (resp.ok) {
+                    document.getElementById('apiStatus').innerHTML = '✅ 连接成功！';
+                    saveAPIConfig();
+                } else {
+                    const err = await resp.text();
+                    document.getElementById('apiStatus').innerHTML = '❌ 连接失败：' + resp.status;
+                }
+            } catch (e) {
+                document.getElementById('apiStatus').innerHTML = '❌ 网络错误：' + e.message;
+            }
+        }
+
+        // AI生成剧情
+        async function generateWithAI(action = '') {
+            if (!gameState.apiConfig.key) {
+                addStoryEntry('⚠️ 请先在"AI"标签页配置API密钥', 'system');
+                return;
+            }
+
+            const prompt = `你是一个武侠/玄幻世界的叙事AI。
+背景：天玄大陆，高武玄幻世界。玩家是一个刚穿越的现代人，附身在15岁小乞丐身上。
+当前状态：
+- 位置：${gameState.location}
+- 时辰：${timeNames[Math.floor(gameState.time.hour / 2) % 12]}
+- 天气：${gameState.weather.type}
+- 气血：${gameState.player.health}/${gameState.player.maxHealth}
+- 饱腹：${gameState.player.hunger}/100
+- 境界：${gameState.player.realm}
+- 盘缠：${gameState.player.silver}两${gameState.player.copper}文
+
+玩家行动：${action || '继续剧情'}
+
+请用300-500字描写接下来发生的事，要求：
+1. 文笔优美，有武侠小说的感觉
+2. 包含环境描写、人物动作、心理活动
+3. 可以引入新的NPC或事件
+4. 根据玩家状态调整剧情（如果饿了可能遇到食物相关事件）
+5. 最后给出2-4个后续选择
+
+回复格式：
+[故事内容]
+
+选择：
+1. xxx
+2. xxx
+3. xxx`;
+
+            addStoryEntry('⏳ AI正在构思剧情...', 'system');
+
+            try {
+                const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + gameState.apiConfig.key.replace(/[^\x00-\x7F]/g, '')
+                    },
+                    body: JSON.stringify({
+                        model: gameState.apiConfig.model,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 1000,
+                        temperature: 0.8
+                    })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const content = data.choices[0]?.message?.content || '';
+                    
+                    // 解析故事和选择
+                    const parts = content.split(/选择[：:]/);
+                    const story = parts[0].trim();
+                    
+                    // 移除之前的"AI正在构思"
+                    const log = document.getElementById('storyLog');
+                    const lastEntry = log.lastElementChild;
+                    if (lastEntry && lastEntry.textContent.includes('AI正在构思')) {
+                        log.removeChild(lastEntry);
+                    }
+
+                    addStoryEntry(story.replace(/\n/g, '<br>'));
+
+                    // 解析选择
+                    if (parts[1]) {
+                        const choices = parts[1].split(/\n/).filter(c => c.trim() && /^\d/.test(c.trim()));
+                        const choicesDiv = document.getElementById('choices');
+                        choicesDiv.innerHTML = choices.map(c => {
+                            const text = c.replace(/^\d+[.、]?\s*/, '').trim();
+                            return `<button class="choice-btn" onclick="selectChoice('${text}')">${text}</button>`;
+                        }).join('');
+                    }
+                } else {
+                    addStoryEntry('❌ AI生成失败，请检查API配置', 'system');
+                }
+            } catch (e) {
+                addStoryEntry('❌ 网络错误：' + e.message, 'system');
+            }
+        }
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
