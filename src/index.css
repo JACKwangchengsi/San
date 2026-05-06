@@ -1,0 +1,631 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --jianghu-gold: #d4a556;
+  --jianghu-red: #8b2942;
+  --jianghu-dark: #1a1a2e;
+  --jianghu-light: #f5f0e1;
+  --jianghu-ink: #2c2c2c;
+  --jianghu-jade: #5b8c5a;
+  --jianghu-silk: #f0e6d3;
+  --jianghu-vermilion: #c43a31;
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --transition-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+  color: #e8e8e8;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root { min-height: 100vh; }
+
+/* ==================== 滚动条 — 国风暗金 ==================== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(26, 26, 46, 0.5); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(212, 165, 86, 0.35); border-radius: 3px; border: 1px solid rgba(212, 165, 86, 0.1); }
+::-webkit-scrollbar-thumb:hover { background: rgba(212, 165, 86, 0.55); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ==================== 选择文字 ==================== */
+::selection { background: rgba(212, 165, 86, 0.35); color: #fff; text-shadow: 0 0 6px rgba(212, 165, 86, 0.4); }
+
+/* ==================== 基础动画关键帧 ==================== */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes slideIn { from { transform: translateX(-16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes floatSlow { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
+@keyframes glowPulse { 0%,100% { box-shadow: 0 0 0 rgba(212,165,86,0); } 50% { box-shadow: 0 0 24px rgba(212,165,86,0.22); } }
+@keyframes subtleShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-1.5px); } 75% { transform: translateX(1.5px); } }
+@keyframes slideInBottom { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes flicker { 0%,100% { opacity: 1; } 8% { opacity: 0.82; } 16% { opacity: 0.94; } 26% { opacity: 0.72; } 38% { opacity: 1; } 58% { opacity: 0.78; } 78% { opacity: 0.9; } }
+@keyframes dangerPulse { 0%,100% { box-shadow: 0 0 0 rgba(220,38,38,0); } 50% { box-shadow: 0 0 40px rgba(220,38,38,0.16); } }
+@keyframes gradientFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes notificationPop { 0% { opacity: 0; transform: scale(0.94) translateY(10px); } 60% { opacity: 1; transform: scale(1.02) translateY(0); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes imageReveal { from { opacity: 0; transform: scale(0.98) translateY(8px); filter: blur(3px); } to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } }
+@keyframes heartbeatSoft { 0%,100% { transform: scale(1); } 14% { transform: scale(1.035); } 28% { transform: scale(1); } 42% { transform: scale(1.028); } 70% { transform: scale(1); } }
+@keyframes panelLift { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes rainMove { from { background-position: 0 0; } to { background-position: -120px 260px; } }
+@keyframes fogDrift { 0% { transform: translateX(-4%); opacity: 0.14; } 50% { transform: translateX(4%); opacity: 0.22; } 100% { transform: translateX(-4%); opacity: 0.14; } }
+@keyframes lightningFlash { 0%,100% { opacity: 0; } 5% { opacity: 0.04; } 7% { opacity: 0.22; } 9% { opacity: 0; } 55% { opacity: 0.04; } 57% { opacity: 0.16; } 59% { opacity: 0; } }
+@keyframes portraitPulse { 0%,100% { box-shadow: 0 0 0 rgba(236,72,153,0); } 50% { box-shadow: 0 0 26px rgba(236,72,153,0.16); } }
+@keyframes cardGlowSweep { 0% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+
+/* ==================== 水墨风格动画 ==================== */
+@keyframes inkSpread {
+  0% { clip-path: circle(0% at 50% 50%); opacity: 0; filter: blur(8px); }
+  80% { filter: blur(1px); }
+  100% { clip-path: circle(100% at 50% 50%); opacity: 1; filter: blur(0); }
+}
+@keyframes scrollUnroll {
+  0% { transform: scaleY(0); transform-origin: top; opacity: 0; filter: brightness(0.3); }
+  100% { transform: scaleY(1); transform-origin: top; opacity: 1; filter: brightness(1); }
+}
+@keyframes inkDrop {
+  0% { transform: scale(0); opacity: 0.8; }
+  60% { transform: scale(1.04); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes brushStroke {
+  0% { width: 0; opacity: 0; }
+  60% { opacity: 0.7; }
+  100% { width: 100%; opacity: 0.4; }
+}
+@keyframes silkWave {
+  0%,100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(0.5deg); }
+  75% { transform: translateY(2px) rotate(-0.5deg); }
+}
+@keyframes lanternSway {
+  0%,100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+@keyframes dustFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  15% { opacity: 0.5; }
+  85% { opacity: 0.2; }
+  100% { transform: translateY(-80px) translateX(20px); opacity: 0; }
+}
+@keyframes nameGlow {
+  0%,100% { text-shadow: 0 0 8px rgba(212,165,86,0.25), 0 0 16px rgba(212,165,86,0.08); }
+  50% { text-shadow: 0 0 16px rgba(212,165,86,0.55), 0 0 40px rgba(212,165,86,0.2), 0 0 60px rgba(212,165,86,0.08); }
+}
+@keyframes scrollGlow {
+  0%,100% { box-shadow: 0 0 0 rgba(212,165,86,0), inset 0 0 0 rgba(212,165,86,0); }
+  50% { box-shadow: 0 0 30px rgba(212,165,86,0.12), inset 0 0 20px rgba(212,165,86,0.04); }
+}
+@keyframes borderRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes skeletonPulse {
+  0%,100% { opacity: 0.25; }
+  50% { opacity: 0.55; }
+}
+
+/* ==================== 战斗动画 ==================== */
+@keyframes combatSlash { 
+  0% { transform: translateX(-24px) rotate(-12deg); opacity: 0; filter: brightness(2); } 
+  25% { transform: translateX(6px) rotate(3deg); opacity: 1; filter: brightness(1.3); } 
+  55% { transform: translateX(-3px) rotate(-1deg); opacity: 0.9; } 
+  100% { transform: translateX(0) rotate(0); opacity: 1; filter: brightness(1); } 
+}
+@keyframes combatImpact { 
+  0% { transform: scale(1); } 18% { transform: scale(1.05); } 30% { transform: scale(0.95); } 
+  50% { transform: scale(1.025); } 70% { transform: scale(0.98); } 100% { transform: scale(1); } 
+}
+@keyframes combatDodge { 
+  0% { transform: translateX(0); opacity: 1; } 
+  22% { transform: translateX(16px) skewX(-7deg); opacity: 0.65; } 
+  48% { transform: translateX(-8px) skewX(3deg); opacity: 0.55; } 
+  72% { transform: translateX(4px); opacity: 0.78; } 
+  100% { transform: translateX(0); opacity: 1; } 
+}
+@keyframes combatBlock { 
+  0% { transform: scale(1); } 
+  18% { transform: scale(0.93); box-shadow: 0 0 0 rgba(255,200,50,0); } 
+  38% { transform: scale(1.015); box-shadow: 0 0 28px rgba(255,200,50,0.45); } 
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,200,50,0); } 
+}
+@keyframes damageNumber { 
+  0% { opacity: 1; transform: translateY(0) scale(0.8); } 
+  35% { opacity: 1; transform: translateY(-22px) scale(1.15); } 
+  100% { opacity: 0; transform: translateY(-36px) scale(0.7); } 
+}
+@keyframes criticalHit { 
+  0% { filter: brightness(1); } 12% { filter: brightness(2.8) saturate(2.2); } 
+  28% { filter: brightness(0.5); } 48% { filter: brightness(1.6); } 100% { filter: brightness(1); } 
+}
+@keyframes swordGlint {
+  0% { opacity: 0; transform: translateX(-100%) skewX(-20deg); }
+  40% { opacity: 0.8; }
+  60% { opacity: 0; }
+  100% { opacity: 0; transform: translateX(200%) skewX(-20deg); }
+}
+
+/* ==================== 修炼突破动画 ==================== */
+@keyframes breakthroughGlow { 
+  0% { box-shadow: 0 0 0 rgba(168,85,247,0), 0 0 0 rgba(59,130,246,0); transform: scale(1); } 
+  30% { box-shadow: 0 0 50px rgba(168,85,247,0.35), 0 0 24px rgba(59,130,246,0.25); transform: scale(1.015); } 
+  60% { box-shadow: 0 0 100px rgba(168,85,247,0.6), 0 0 50px rgba(59,130,246,0.4); transform: scale(1.03); } 
+  80% { box-shadow: 0 0 160px rgba(168,85,247,0.8), 0 0 80px rgba(59,130,246,0.55); transform: scale(1.05); } 
+  100% { box-shadow: 0 0 30px rgba(168,85,247,0.25), 0 0 16px rgba(59,130,246,0.15); transform: scale(1); } 
+}
+@keyframes qiFlow { 
+  0% { background-position: 0% 50%; opacity: 0.5; } 
+  50% { background-position: 100% 50%; opacity: 0.9; } 
+  100% { background-position: 0% 50%; opacity: 0.5; } 
+}
+@keyframes realmAscend { 
+  0% { opacity: 0; transform: translateY(24px) scale(0.78); filter: blur(6px); } 
+  45% { opacity: 0.8; transform: translateY(-6px) scale(1.04); filter: blur(0); } 
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } 
+}
+@keyframes particleRise { 
+  0% { opacity: 0.7; transform: translateY(0) translateX(0) scale(1); } 
+  100% { opacity: 0; transform: translateY(-110px) translateX(var(--drift, 18px)) scale(0); } 
+}
+@keyframes qiSwirl { 
+  0% { transform: rotate(0deg) scale(1); } 25% { transform: rotate(90deg) scale(1.08); } 
+  50% { transform: rotate(180deg) scale(1); } 75% { transform: rotate(270deg) scale(1.08); } 
+  100% { transform: rotate(360deg) scale(1); } 
+}
+@keyframes spiritRipple {
+  0% { box-shadow: 0 0 0 0 rgba(168,85,247,0.5); }
+  100% { box-shadow: 0 0 0 40px rgba(168,85,247,0); }
+}
+
+/* ==================== 页面/面板过渡动画 ==================== */
+@keyframes pageEnter { from { opacity: 0; transform: scale(0.965) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes pageExit { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(0.96); } }
+@keyframes modalBackdrop { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(4px); } }
+@keyframes modalPanelIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideDownFade { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes panelSlideIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ==================== 按钮/交互反馈 ==================== */
+@keyframes btnPress { 0% { transform: scale(1); } 35% { transform: scale(0.93); } 65% { transform: scale(1.02); } 100% { transform: scale(1); } }
+@keyframes ripple { 0% { transform: scale(0); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
+@keyframes attentionGlow { 0%,100% { box-shadow: 0 0 0 rgba(250,204,21,0); } 50% { box-shadow: 0 0 16px rgba(250,204,21,0.3); } }
+@keyframes textReveal { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes typewriter { from { width: 0; } to { width: 100%; } }
+@keyframes blinkCaret { 0%,100% { border-color: transparent; } 50% { border-color: rgba(212,165,86,0.65); } }
+
+/* ==================== 物品获得特效 ==================== */
+@keyframes itemAcquired { 
+  0% { transform: scale(0) rotate(-75deg); opacity: 0; } 
+  55% { transform: scale(1.12) rotate(6deg); opacity: 1; } 
+  75% { transform: scale(0.94) rotate(-3deg); } 
+  100% { transform: scale(1) rotate(0); opacity: 1; } 
+}
+@keyframes coinDrop { 
+  0% { transform: translateY(-36px) rotate(0deg); opacity: 0; } 
+  25% { opacity: 1; } 
+  55% { transform: translateY(3px) rotate(360deg); } 
+  75% { transform: translateY(-1px) rotate(335deg); } 
+  100% { transform: translateY(0) rotate(360deg); opacity: 1; } 
+}
+
+/* ==================== 输入框聚焦特效 ==================== */
+@keyframes inputFocusGlow {
+  0% { box-shadow: 0 0 0 0 rgba(212,165,86,0); }
+  100% { box-shadow: 0 0 0 4px rgba(212,165,86,0.15), 0 0 20px rgba(212,165,86,0.08); }
+}
+
+/* ==================== 动画工具类 ==================== */
+.animate-fadeIn, .animate-fade-in { animation: fadeIn 0.3s ease-out both; }
+.animate-fade-in-up { animation: fadeInUp 0.35s ease-out both; }
+.animate-fade-in-down { animation: fadeInDown 0.3s ease-out both; }
+.animate-pulse, .animate-pulse-slow { animation: pulse 2.2s ease-in-out infinite; }
+.animate-slideIn { animation: slideIn 0.3s ease-out both; }
+.animate-item-pickup { animation: fadeInUp 0.25s ease-out both, glowPulse 1.4s ease-in-out 1; }
+.animate-shake { animation: subtleShake 0.35s ease-in-out 1; }
+.animate-shake-intense { animation: subtleShake 0.22s ease-in-out 2; }
+.animate-border-glow { animation: glowPulse 1.2s ease-in-out infinite; }
+.animate-float-slow { animation: floatSlow 3.2s ease-in-out infinite; }
+.animate-slide-in-bottom { animation: slideInBottom 0.32s ease-out both; }
+.animate-slide-in-right { animation: slideInRight 0.28s ease-out both; }
+.animate-flicker { animation: flicker 1.8s linear infinite; }
+.animate-danger-pulse { animation: dangerPulse 1.4s ease-in-out infinite; }
+.animate-gradient-flow { background-size: 200% 200%; animation: gradientFlow 7s ease infinite; }
+.animate-notification-pop { animation: notificationPop 0.3s ease-out both; }
+.animate-image-reveal { animation: imageReveal 0.45s ease-out both; }
+.animate-heartbeat-soft { animation: heartbeatSoft 2.4s ease-in-out infinite; }
+.animate-panel-lift { animation: panelLift 0.28s ease-out both; }
+.animate-portrait-pulse { animation: portraitPulse 1.9s ease-in-out infinite; }
+.animate-panel-slide-in { animation: panelSlideIn 0.3s ease-out both; }
+
+/* 水墨风类 */
+.animate-ink-spread { animation: inkSpread 0.8s ease-out both; }
+.animate-scroll-unroll { animation: scrollUnroll 0.65s ease-out both; }
+.animate-silk-wave { animation: silkWave 4s ease-in-out infinite; }
+.animate-lantern-sway { animation: lanternSway 3s ease-in-out infinite; }
+.animate-dust-float { animation: dustFloat 2s ease-out both; }
+.animate-name-glow { animation: nameGlow 3s ease-in-out infinite; }
+.animate-scroll-glow { animation: scrollGlow 4s ease-in-out infinite; }
+.animate-skeleton-pulse { animation: skeletonPulse 1.8s ease-in-out infinite; }
+
+/* 战斗类 */
+.animate-combat-slash { animation: combatSlash 0.5s ease-out both; }
+.animate-combat-impact { animation: combatImpact 0.55s ease-out both; }
+.animate-combat-dodge { animation: combatDodge 0.6s ease-out both; }
+.animate-combat-block { animation: combatBlock 0.5s ease-out both; }
+.animate-damage-number { animation: damageNumber 1s ease-out forwards; }
+.animate-critical-hit { animation: criticalHit 0.6s ease-out both; }
+.animate-sword-glint { position: relative; overflow: hidden; }
+.animate-sword-glint::after { content: ''; position: absolute; top: 0; left: 0; width: 60%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); animation: swordGlint 1.8s ease-in-out infinite; pointer-events: none; }
+
+/* 修炼类 */
+.animate-breakthrough { animation: breakthroughGlow 2.5s ease-in-out; }
+.animate-qi-flow { background-size: 200% 200%; animation: qiFlow 3s ease-in-out infinite; }
+.animate-realm-ascend { animation: realmAscend 1.2s ease-out both; }
+.animate-particle-rise { animation: particleRise 1.5s ease-out forwards; }
+.animate-qi-swirl { animation: qiSwirl 6s linear infinite; }
+.animate-spirit-ripple { animation: spiritRipple 1.5s ease-out infinite; }
+
+/* 过渡类 */
+.animate-page-enter { animation: pageEnter 0.35s ease-out both; }
+.animate-page-exit { animation: pageExit 0.25s ease-in forwards; }
+.animate-modal-backdrop { animation: modalBackdrop 0.25s ease-out both; }
+.animate-modal-panel-in { animation: modalPanelIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-slide-up-fade { animation: slideUpFade 0.3s ease-out both; }
+.animate-slide-down-fade { animation: slideDownFade 0.28s ease-out both; }
+.animate-scale-in { animation: scaleIn 0.26s ease-out both; }
+.animate-btn-press { animation: btnPress 0.3s ease-out both; }
+.animate-attention-glow { animation: attentionGlow 1.6s ease-in-out infinite; }
+.animate-text-reveal { animation: textReveal 0.4s ease-out both; }
+.animate-item-acquired { animation: itemAcquired 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-coin-drop { animation: coinDrop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+/* ==================== 粒子/光效容器 ==================== */
+.particle-container { position: relative; overflow: hidden; }
+.particle-container::before,
+.particle-container::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168,85,247,0.5), transparent);
+  animation: particleRise 2s ease-out infinite;
+  pointer-events: none;
+}
+.particle-container::before { width: 4px; height: 4px; left: 18%; bottom: 0; animation-delay: 0s; --drift: -14px; }
+.particle-container::after { width: 6px; height: 6px; left: 58%; bottom: 0; animation-delay: 0.7s; --drift: 10px; }
+
+/* 三重粒子 */
+.particle-container-heavy { position: relative; overflow: hidden; }
+.particle-container-heavy::before,
+.particle-container-heavy::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.particle-container-heavy::before { 
+  width: 5px; height: 5px; left: 15%; bottom: 5%;
+  background: radial-gradient(circle, rgba(168,85,247,0.55), transparent);
+  animation: particleRise 1.8s ease-out infinite; animation-delay: 0s; --drift: -12px;
+}
+.particle-container-heavy::after { 
+  width: 7px; height: 7px; left: 55%; bottom: 8%;
+  background: radial-gradient(circle, rgba(59,130,246,0.5), transparent);
+  animation: particleRise 2.2s ease-out infinite; animation-delay: 0.4s; --drift: 16px;
+}
+
+.breakthrough-overlay { position: relative; }
+.breakthrough-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(168,85,247,0.12), transparent 70%);
+  animation: breakthroughGlow 2.5s ease-in-out;
+  pointer-events: none;
+  z-index: 10;
+  border-radius: inherit;
+}
+
+/* 墨点扩散装饰 */
+.ink-splash {
+  position: relative;
+}
+.ink-splash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(212,165,86,0.06) 0%, transparent 50%),
+              radial-gradient(circle at 70% 60%, rgba(139,41,66,0.04) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ==================== UI 组件类 ==================== */
+.shimmer-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,0.015), rgba(255,255,255,0.08), rgba(255,255,255,0.015));
+  background-size: 200% 100%;
+  animation: shimmer 2.6s linear infinite;
+}
+
+/* 噪点遮罩 — 仿古纸质感 */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.03;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.6) 0.5px, transparent 0.6px),
+    radial-gradient(circle at 80% 40%, rgba(255,255,255,0.5) 0.5px, transparent 0.6px),
+    radial-gradient(circle at 60% 80%, rgba(255,255,255,0.45) 0.5px, transparent 0.6px),
+    radial-gradient(circle at 35% 55%, rgba(255,255,255,0.55) 0.5px, transparent 0.6px);
+  background-size: 16px 16px, 22px 22px, 20px 20px, 18px 18px;
+}
+
+/* 卷轴纹理叠加 */
+.scroll-texture {
+  position: relative;
+}
+.scroll-texture::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(212,165,86,0.3) 2px,
+    rgba(212,165,86,0.3) 3px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 天气效果 */
+.weather-rain {
+  background-image: linear-gradient(transparent 0%, rgba(180,210,255,0.1) 50%, transparent 100%);
+  background-size: 160px 260px;
+  animation: rainMove 1.15s linear infinite;
+}
+.weather-fog {
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(220,220,220,0.12), transparent 35%),
+    radial-gradient(circle at 80% 65%, rgba(220,220,220,0.1), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(220,220,220,0.14), transparent 45%);
+  animation: fogDrift 10s ease-in-out infinite;
+}
+.weather-lightning { animation: lightningFlash 4.5s linear infinite; }
+
+/* 文本样式 */
+.text-jianghu { color: var(--jianghu-gold); text-shadow: 0 0 10px rgba(212, 165, 86, 0.3); }
+.text-jianghu-glow { color: var(--jianghu-gold); animation: nameGlow 3s ease-in-out infinite; }
+
+/* 卡片样式 */
+.card-jianghu {
+  background: linear-gradient(145deg, rgba(26, 26, 46, 0.9), rgba(15, 15, 35, 0.95));
+  border: 1px solid rgba(212, 165, 86, 0.18);
+  border-radius: 10px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+.card-jianghu:hover {
+  border-color: rgba(212, 165, 86, 0.3);
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(212, 165, 86, 0.06);
+}
+
+/* 国风按钮 */
+.btn-jianghu {
+  background: linear-gradient(135deg, #d4a556, #b8923e);
+  color: #1a1a2e;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+.btn-jianghu:hover { background: linear-gradient(135deg, #e8b866, #c9a34f); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(212, 165, 86, 0.3); }
+.btn-jianghu:active { transform: translateY(0); animation: btnPress 0.3s ease-out both; }
+.btn-jianghu:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-jianghu::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.25), transparent);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-jianghu:active::after { animation: ripple 0.6s ease-out; }
+
+/* 故事文本 */
+.story-text { text-shadow: 0 0 1px rgba(255,255,255,0.015); }
+
+/* 面板装饰角标 */
+.panel-ornament { position: relative; }
+.panel-ornament::before, .panel-ornament::after { content: ''; position: absolute; width: 12px; height: 12px; border-color: rgba(212,165,86,0.3); }
+.panel-ornament::before { top: 5px; left: 5px; border-top: 1px solid; border-left: 1px solid; }
+.panel-ornament::after { bottom: 5px; right: 5px; border-bottom: 1px solid; border-right: 1px solid; }
+
+/* 玻璃态 */
+.glass-jianghu {
+  background: linear-gradient(180deg, rgba(24,24,37,0.7), rgba(12,12,18,0.82));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* 边框装饰 */
+.border-ornate { border: 1px solid rgba(212,165,86,0.16); box-shadow: inset 0 1px 0 rgba(255,255,255,0.025), 0 8px 30px rgba(0,0,0,0.3); }
+
+/* 悬停上浮 */
+.hover-lift { transition: transform 0.22s var(--transition-bounce), box-shadow 0.22s var(--transition-smooth), border-color 0.22s var(--transition-smooth); }
+.hover-lift:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+.hover-lift:active { animation: btnPress 0.3s ease-out both; }
+
+/* 图片暗角 */
+.img-vignette { position: relative; }
+.img-vignette::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 100%);
+  pointer-events: none;
+}
+
+/* 分割线 */
+.story-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(212,165,86,0.3), transparent); }
+
+/* 卡片闪光扫过 */
+.card-shine { position: relative; overflow: hidden; }
+.card-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.05) 40%, transparent 80%);
+  transform: translateX(-120%);
+}
+.card-shine:hover::after { animation: cardGlowSweep 0.9s ease; }
+
+/* ==================== 按钮交互增强 ==================== */
+.btn-ripple { position: relative; overflow: hidden; }
+.btn-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255,255,255,0.25), transparent);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-ripple:active::after { animation: ripple 0.6s ease-out; }
+
+.btn-combat { transition: all 0.15s var(--transition-smooth); }
+.btn-combat:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(220,38,38,0.22); }
+.btn-combat:active { animation: btnPress 0.25s ease-out both; }
+
+/* ==================== 面板切换动画 ==================== */
+.panel-transition-enter { animation: slideUpFade 0.28s ease-out both; }
+.panel-transition-exit { animation: pageExit 0.2s ease-in forwards; }
+
+/* ==================== 场景过渡遮罩 ==================== */
+.scene-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: radial-gradient(circle at center, rgba(26,26,46,0.95), rgba(0,0,0,0.98));
+  animation: modalBackdrop 0.4s ease-out both;
+  pointer-events: all;
+}
+
+/* ==================== 骨架屏加载 ==================== */
+.skeleton-box {
+  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  background-size: 200% 100%;
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+  border-radius: 6px;
+}
+.skeleton-text { height: 14px; margin-bottom: 6px; }
+.skeleton-text-sm { height: 10px; width: 65%; }
+.skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+.skeleton-card { height: 80px; border-radius: 10px; }
+
+/* ==================== 打字机效果 ==================== */
+.typewriter-container {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid rgba(212,165,86,0.6);
+  animation: typewriter 1.8s steps(30) 1, blinkCaret 0.8s step-end infinite;
+  max-width: fit-content;
+}
+
+/* ==================== 输入框增强 ==================== */
+.input-jianghu {
+  transition: all 0.25s var(--transition-smooth);
+}
+.input-jianghu:focus {
+  animation: inputFocusGlow 0.4s ease-out forwards;
+  border-color: rgba(212,165,86,0.5);
+}
+
+/* ==================== 渐变边框卡片 ==================== */
+.gradient-border-card {
+  position: relative;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(26,26,46,0.9), rgba(15,15,35,0.95));
+}
+.gradient-border-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 12px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(212,165,86,0.3), transparent 40%, transparent 60%, rgba(212,165,86,0.15));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ==================== 动态渐变背景 ==================== */
+.bg-jianghu-gradient {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #1a1a2e 60%, #0f0f23 100%);
+  background-size: 400% 400%;
+  animation: gradientFlow 12s ease infinite;
+}
+
+/* ==================== 光泽标签 ==================== */
+.tag-jianghu {
+  background: linear-gradient(135deg, rgba(212,165,86,0.15), rgba(139,41,66,0.1));
+  border: 1px solid rgba(212,165,86,0.2);
+  color: var(--jianghu-gold);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* ==================== 呼吸边框 ==================== */
+.breathing-border {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* ==================== 水墨晕染遮罩 ==================== */
+.ink-mask {
+  -webkit-mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 60%, transparent 100%);
+}
+
+/* ==================== 响应式增强 ==================== */
+@media (max-width: 767px) {
+  .mobile-app-shell { font-size: 14px; }
+  .mobile-app-header { padding: 8px 10px !important; }
+  .mobile-panel { border-top: 1px solid rgba(63, 63, 70, 0.6); }
+  .mobile-tabbar { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .mobile-tabbar::-webkit-scrollbar { display: none; }
+  .mobile-buttons { -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 4px; }
+  .mobile-buttons::-webkit-scrollbar { display: none; }
+  .mobile-stack { flex-direction: column; gap: 6px; }
+}
+
+/* ==================== 打印样式 ==================== */
+@media print {
+  .noise-overlay, .weather-rain, .weather-fog, .weather-lightning { display: none; }
+  body { background: #fff; color: #000; }
+}
