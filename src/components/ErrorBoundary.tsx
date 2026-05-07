@@ -1,5 +1,6 @@
 import React from 'react';
 import { addCrashLog } from '../utils/crashLogger';
+import { logger } from '../utils/logger';
 
 interface State {
   hasError: boolean;
@@ -27,7 +28,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Stat
       source: 'ErrorBoundary',
       detail: info,
     });
-    console.error('[App ErrorBoundary]', error, info);
+    logger.core.error('ErrorBoundary 捕获异常', error, info);
   }
 
   render() {

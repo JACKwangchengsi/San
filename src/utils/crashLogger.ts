@@ -5,7 +5,7 @@ export interface CrashLogEntry {
   message: string;
   stack?: string;
   source?: string;
-  detail?: any;
+  detail?: unknown;
   url: string;
   userAgent: string;
 }
@@ -55,8 +55,9 @@ export function clearCrashLogs() {
 }
 
 export function installGlobalCrashHandlers() {
-  if ((window as any).__JIANGHU_CRASH_LOGGER_INSTALLED__) return;
-  (window as any).__JIANGHU_CRASH_LOGGER_INSTALLED__ = true;
+  const win = window as unknown as Record<string, unknown>;
+  if (win.__JIANGHU_CRASH_LOGGER_INSTALLED__) return;
+  win.__JIANGHU_CRASH_LOGGER_INSTALLED__ = true;
 
   window.addEventListener('error', (event) => {
     addCrashLog({
@@ -72,11 +73,12 @@ export function installGlobalCrashHandlers() {
   });
 
   window.addEventListener('unhandledrejection', (event) => {
-    const reason: any = event.reason;
+    const reason: unknown = event.reason;
+    const err = reason instanceof Error ? reason : null;
     addCrashLog({
       type: 'promise',
-      message: reason?.message || String(reason || '未处理的 Promise 异常'),
-      stack: reason?.stack,
+      message: err?.message || String(reason || '未处理的 Promise 异常'),
+      stack: err?.stack,
       source: 'unhandledrejection',
       detail: reason,
     });
