@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, BarChart3, Bot, Brain, CheckCircle, ChevronDown, ChevronUp, Copy, DollarSign, ExternalLink, FileJson, Key, Loader2, MapPin, MessageCircle, Play, RefreshCw, Save, Send, Settings, Sparkles, TestTube, User, Wifi, WifiOff, Zap } from 'lucide-react';
-import { AIResponse, AIPromptSettings, BirthSettings, GameState, NPC, ParseConfig, OrchestratorSettings } from '../types/game';
+import { AIResponse, AIPromptSettings, BirthSettings, Buff, CraftingRecipe, Debuff, Disease, GameState, Injury, NPC, ParseConfig, OrchestratorSettings } from '../types/game';
 import { formatSmartParseResult, smartParseAIResponse } from '../utils/aiSmartParser';
 import { orchestrateAIResponse, loadOrchestratorSettings } from '../systems/Orchestrator';
+import { logger } from '../utils/logger';
 
 interface APIConfig {
   provider: 'openai' | 'claude' | 'ollama' | 'custom' | 'deepseek' | 'qwen' | 'siliconflow';
@@ -380,24 +381,24 @@ export const AIConsole: React.FC<AIConsoleProps> = ({ state, lastAction, onUpdat
       return entries.map(([name, rep]) => `${name}(声望${rep})`).join('、');
     })();
     const recipeInfo = (() => {
-      const known = (state.craftingRecipes || []).filter((r: any) => r.isUnlocked).map((r: any) => r.name).join('、');
+      const known = (state.craftingRecipes || []).filter((r: CraftingRecipe) => r.isUnlocked).map((r: CraftingRecipe) => r.name).join('、');
       return known || '暂无';
     })();
     const injuryInfo = (() => {
       if (!state.player.injuries?.length) return '暂无';
-      return state.player.injuries.map((inj: any) => `${inj.name}(${inj.bodyPart || '?'}, 严重度${inj.severity || 1}, 愈合${Math.round((inj.healingProgress || 0) * 100)}%)`).join('；');
+      return state.player.injuries.map((inj: Injury) => `${inj.name}(${inj.bodyPart || '?'}, 严重度${inj.severity || 1}, 愈合${Math.round((inj.healingProgress || 0) * 100)}%)`).join('；');
     })();
     const diseaseInfo = (() => {
       if (!state.player.diseases?.length) return '暂无';
-      return state.player.diseases.map((d: any) => `${d.name}(阶段${d.stage}/${d.maxStage})`).join('、');
+      return state.player.diseases.map((d: Disease) => `${d.name}(阶段${d.stage}/${d.maxStage})`).join('、');
     })();
     const buffInfo = (() => {
       if (!state.player.buffs?.length) return '暂无';
-      return state.player.buffs.map((b: any) => `${b.name}(剩余${Math.round((b.duration || 0) / 60)}分钟)`).join('、');
+      return state.player.buffs.map((b: Buff) => `${b.name}(剩余${Math.round((b.duration || 0) / 60)}分钟)`).join('、');
     })();
     const debuffInfo = (() => {
       if (!state.player.debuffs?.length) return '暂无';
-      return state.player.debuffs.map((d: any) => `${d.name}(剩余${Math.round((d.duration || 0) / 60)}分钟)`).join('、');
+      return state.player.debuffs.map((d: Debuff) => `${d.name}(剩余${Math.round((d.duration || 0) / 60)}分钟)`).join('、');
     })();
     const bodyConditionText = `体温${state.world.weather.temperature}°C`;
     const killStats = `杀怪${state.player.killCount?.monsters || 0}、杀人${state.player.killCount?.humans || 0}、杀异端${state.player.killCount?.heretics || 0}`;
@@ -484,10 +485,10 @@ export const AIConsole: React.FC<AIConsoleProps> = ({ state, lastAction, onUpdat
       const normalizedResponse = orchestratorSettings.enabled
         ? orchestrateAIResponse(aiResponse, state, orchestratorSettings).response
         : aiResponse;
-      console.log('[AI] 智能解析摘要:', formatSmartParseResult(parsed).join(' | '));
+      logger.ai.info('智能解析摘要:', formatSmartParseResult(parsed).join(' | '));
       onUpdate(normalizedResponse);
     } catch (err) {
-      console.error('[AI] 解析失败:', err);
+      logger.ai.error('解析失败:', err);
       onUpdate({ story_text: extractDisplayText(result) || '（AI响应无法解析）' });
     }
   };

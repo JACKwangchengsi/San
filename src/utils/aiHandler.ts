@@ -1,7 +1,8 @@
-import { GameState } from "../types/game";
+import { AIResponse, GameState } from "../types/game";
+import { logger } from "./logger";
 
 export const AI_INSTRUCTION_PROMPT = `
-你是一个高质量武侠文本冒险游戏的“江湖主持人”。
+你是一个高质量武侠文本冒险游戏的"江湖主持人"。
 世界观：架空武侠江湖，门派林立、恩怨纷争、侠义与权谋并存。主角为初入江湖的少年侠客。
 
 任务要求：
@@ -12,7 +13,7 @@ export const AI_INSTRUCTION_PROMPT = `
 5. 必须提供3-5个choices与consequence_hint。
 
 关键规则：
-- new_items 仅能是“可拾取实物”（兵器、药材、银两、铜钱、干粮、水囊、火折子、地图、文书、信物、锁钥等）。
+- new_items 仅能是"可拾取实物"（兵器、药材、银两、铜钱、干粮、水囊、火折子、地图、文书、信物、锁钥等）。
 - 禁止出现现代物品：手机、电脑、电池、充电、网络、对讲机、枪械、药片等。
 - 伤势/内伤/疼痛/恐惧/情绪/风险/地点 不是物品，禁止写入new_items。
 - 伤势应体现在 story_text 或 player_stat_changes.health。
@@ -89,13 +90,13 @@ ${userAction}
 `;
 }
 
-export function parseAIResponse(jsonString: string): any {
+export function parseAIResponse(jsonString: string): AIResponse | null {
   try {
     // Attempt to clean markdown if present (e.g. ```json ... ```)
     const cleanString = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanString);
+    return JSON.parse(cleanString) as AIResponse;
   } catch (e) {
-    console.error("AI Parse Error", e);
+    logger.ai.error('AI Response 解析失败', e);
     return null;
   }
 }
