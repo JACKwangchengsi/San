@@ -45,69 +45,8 @@ export default {
         'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
         'out-expo': 'cubic-bezier(0.19, 1, 0.22, 1)',
       },
-      keyframes: {
-        'ink-spread': {
-          '0%': { clipPath: 'circle(0% at 50% 50%)', opacity: '0' },
-          '100%': { clipPath: 'circle(100% at 50% 50%)', opacity: '1' },
-        },
-        'scroll-unroll': {
-          '0%': { transform: 'scaleY(0)', transformOrigin: 'top', opacity: '0' },
-          '100%': { transform: 'scaleY(1)', transformOrigin: 'top', opacity: '1' },
-        },
-        'silk-wave': {
-          '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
-          '25%': { transform: 'translateY(-2px) rotate(0.5deg)' },
-          '75%': { transform: 'translateY(2px) rotate(-0.5deg)' },
-        },
-        'lantern-sway': {
-          '0%, 100%': { transform: 'rotate(-2deg)' },
-          '50%': { transform: 'rotate(2deg)' },
-        },
-        'dust-float': {
-          '0%, 100%': { transform: 'translateY(0) translateX(0)', opacity: '0' },
-          '20%': { opacity: '0.6' },
-          '80%': { opacity: '0.3' },
-          '100%': { transform: 'translateY(-60px) translateX(15px)', opacity: '0' },
-        },
-        'skeleton-pulse': {
-          '0%, 100%': { opacity: '0.3' },
-          '50%': { opacity: '0.6' },
-        },
-        'border-rotate': {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' },
-        },
-        'name-glow': {
-          '0%, 100%': { textShadow: '0 0 8px rgba(212,165,86,0.3), 0 0 20px rgba(212,165,86,0.1)' },
-          '50%': { textShadow: '0 0 16px rgba(212,165,86,0.6), 0 0 40px rgba(212,165,86,0.25), 0 0 60px rgba(212,165,86,0.1)' },
-        },
-        'scroll-glow': {
-          '0%, 100%': { boxShadow: '0 0 0 rgba(212,165,86,0), inset 0 0 0 rgba(212,165,86,0)' },
-          '50%': { boxShadow: '0 0 30px rgba(212,165,86,0.15), inset 0 0 20px rgba(212,165,86,0.05)' },
-        },
-      },
-      animation: {
-        'ink-spread': 'ink-spread 0.8s ease-out',
-        'scroll-unroll': 'scroll-unroll 0.6s ease-out',
-        'silk-wave': 'silk-wave 4s ease-in-out infinite',
-        'lantern-sway': 'lantern-sway 3s ease-in-out infinite',
-        'dust-float': 'dust-float 2s ease-out forwards',
-        'skeleton-pulse': 'skeleton-pulse 1.8s ease-in-out infinite',
-        'border-rotate': 'border-rotate 8s linear infinite',
-        'name-glow': 'name-glow 3s ease-in-out infinite',
-        'scroll-glow': 'scroll-glow 4s ease-in-out infinite',
-      },
-      typography: {
-        DEFAULT: {
-          css: {
-            maxWidth: 'none',
-            color: '#d4d4d8',
-            p: { color: '#d4d4d8' },
-            strong: { color: '#fff' },
-            a: { color: '#d4a556' },
-          },
-        },
-      },
+      // ⚠ 水墨/国风关键帧统一在 src/index.css 中定义（CSS 版本更丰富，Tailwind 版本会被覆盖）
+      // 此处仅保留 Tailwind 原生不提供的扩展配置
     },
   },
   plugins: [],
