@@ -1,18 +1,26 @@
 {
-  "name": "江湖侠影录",
+  "name": "江湖侠影录 - AI驱动武侠文字冒险",
   "short_name": "江湖侠影录",
-  "description": "武侠江湖文本冒险游戏",
+  "description": "高武到玄幻的本地可运行武侠文字冒险游戏，AI驱动无限剧情，沉浸式江湖体验",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0a0a0a",
+  "display_override": ["window-controls-overlay"],
+  "background_color": "#09090b",
   "theme_color": "#18181b",
   "lang": "zh-CN",
+  "dir": "ltr",
+  "orientation": "any",
+  "categories": ["games", "entertainment"],
+  "scope": ".",
   "icons": [
     {
       "src": "./icon.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [],
+  "shortcuts": [],
+  "prefer_related_applications": false
 }
