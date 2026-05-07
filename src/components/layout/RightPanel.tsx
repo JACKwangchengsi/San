@@ -1,6 +1,7 @@
 /**
  * RightPanel — 右侧面板子组件（Tab 路由 + 内容区）
  * 从 GameLayout.tsx 提取（原 ~80行 JSX）
+ * 每个 Tab 面板使用独立的 PanelErrorBoundary 降级
  */
 
 import React, { Suspense } from 'react';
@@ -8,6 +9,7 @@ import { StatsPanel } from '../StatsPanel';
 import { Inventory } from '../Inventory';
 import { NPCPanel } from '../NPCPanel';
 import { LocationPanel } from '../LocationPanel';
+import { PanelErrorBoundary } from '../PanelErrorBoundary';
 import { lazy } from 'react';
 import { Sword, Package, Users, Map, Hammer, Coins, Star, Eye, Image as ImageIcon, Bot, RefreshCw } from 'lucide-react';
 import type { GameState, BirthSettings, Item, NPC, OrchestratorSettings, AIResponse } from '../../types/game';
@@ -96,16 +98,16 @@ export const RightPanel: React.FC<RightPanelProps> = ({
 }) => {
   const renderContent = () => {
     switch (activeTab) {
-      case 'stats': return <StatsPanel player={state.player} world={state.world} />;
-      case 'inventory': return <Inventory items={state.player.inventory} onUse={handleUseItem} onDrop={handleDropItem} onSelect={setSelectedItem} onRefill={refillItem} />;
-      case 'npcs': return <NPCPanel npcs={state.npcs} currentLocation={state.world.location} onTalk={handleTalkToNPC} onGeneratePortrait={(npc) => requestSceneImage('portrait', npc)} focusNPCId={focusedNPCId} onFocusHandled={() => setFocusedNPCId(null)} />;
-      case 'map': return <LocationPanel locations={state.locations} currentLocation={state.world.location} onMove={moveToLocation} onSelectNPCByName={handleSelectNPCByName} npcCounts={npcCountsByLocation} npcNames={npcNamesByLocation} shopCounts={shopCountsByLocation} factionMarks={factionMarksByLocation} eventIntensity={eventIntensityByLocation} logs={state.logs} />;
-      case 'craft': return <Suspense fallback={panelFallback}><CraftingPanel /></Suspense>;
-      case 'shop': return <Suspense fallback={panelFallback}><ShopPanel isMobile={isMobileUI} /></Suspense>;
-      case 'cultivation': return <Suspense fallback={panelFallback}><CultivationPanel /></Suspense>;
-      case 'world': return <Suspense fallback={panelFallback}><WorldDetailPanel /></Suspense>;
-      case 'scene': return <Suspense fallback={panelFallback}><SceneImagePanel state={state} birthSettings={birthSettings} latestStoryText={pendingSceneStoryRef.current || latestStoryText} anchorLogId={pendingSceneAnchorRef.current || latestStoryAnchorId} manualRequest={sceneRequest} onSceneGenerated={onSceneGenerated} /></Suspense>;
-      case 'ai': return <Suspense fallback={panelFallback}><AIConsole state={state} lastAction={playerInput || '等待输入...'} birthSettings={birthSettings} onUpdate={onAIUpdate} isProcessing={isProcessing} autoAIEnabled={autoAIEnabled} setAutoAIEnabled={setAutoAIEnabled} onRegisterAIGenerator={(generator: (action: string) => Promise<void>) => { aiGeneratorRef.current = generator; if (autoAIEnabled) setAICallback(generator); }} npcTalkRequest={npcTalkRequest} onNPCTalkHandled={onNPCTalkHandled} webInputDraft={webInputDraft} onWebInputConsumed={onWebInputConsumed} /></Suspense>;
+      case 'stats': return <PanelErrorBoundary panelName="状态面板" compact><StatsPanel player={state.player} world={state.world} /></PanelErrorBoundary>;
+      case 'inventory': return <PanelErrorBoundary panelName="物品面板" compact><Inventory items={state.player.inventory} onUse={handleUseItem} onDrop={handleDropItem} onSelect={setSelectedItem} onRefill={refillItem} /></PanelErrorBoundary>;
+      case 'npcs': return <PanelErrorBoundary panelName="人物面板" compact><NPCPanel npcs={state.npcs} currentLocation={state.world.location} onTalk={handleTalkToNPC} onGeneratePortrait={(npc) => requestSceneImage('portrait', npc)} focusNPCId={focusedNPCId} onFocusHandled={() => setFocusedNPCId(null)} /></PanelErrorBoundary>;
+      case 'map': return <PanelErrorBoundary panelName="地图面板" compact><LocationPanel locations={state.locations} currentLocation={state.world.location} onMove={moveToLocation} onSelectNPCByName={handleSelectNPCByName} npcCounts={npcCountsByLocation} npcNames={npcNamesByLocation} shopCounts={shopCountsByLocation} factionMarks={factionMarksByLocation} eventIntensity={eventIntensityByLocation} logs={state.logs} /></PanelErrorBoundary>;
+      case 'craft': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="制作面板" compact><CraftingPanel /></PanelErrorBoundary></Suspense>;
+      case 'shop': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="店铺面板" compact><ShopPanel isMobile={isMobileUI} /></PanelErrorBoundary></Suspense>;
+      case 'cultivation': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="修炼面板" compact><CultivationPanel /></PanelErrorBoundary></Suspense>;
+      case 'world': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="世界面板" compact><WorldDetailPanel /></PanelErrorBoundary></Suspense>;
+      case 'scene': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="场景图面板" compact><SceneImagePanel state={state} birthSettings={birthSettings} latestStoryText={pendingSceneStoryRef.current || latestStoryText} anchorLogId={pendingSceneAnchorRef.current || latestStoryAnchorId} manualRequest={sceneRequest} onSceneGenerated={onSceneGenerated} /></PanelErrorBoundary></Suspense>;
+      case 'ai': return <Suspense fallback={panelFallback}><PanelErrorBoundary panelName="AI面板" compact><AIConsole state={state} lastAction={playerInput || '等待输入...'} birthSettings={birthSettings} onUpdate={onAIUpdate} isProcessing={isProcessing} autoAIEnabled={autoAIEnabled} setAutoAIEnabled={setAutoAIEnabled} onRegisterAIGenerator={(generator: (action: string) => Promise<void>) => { aiGeneratorRef.current = generator; if (autoAIEnabled) setAICallback(generator); }} npcTalkRequest={npcTalkRequest} onNPCTalkHandled={onNPCTalkHandled} webInputDraft={webInputDraft} onWebInputConsumed={onWebInputConsumed} /></PanelErrorBoundary></Suspense>;
       default: return null;
     }
   };

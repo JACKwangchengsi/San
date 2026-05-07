@@ -1,11 +1,14 @@
 import React from 'react';
 import { GameProvider } from './context/GameContext';
 import { GameLayout } from './components/GameLayout';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 export default function App() {
   return (
-    <GameProvider>
-      <GameLayout />
-    </GameProvider>
+    <ErrorBoundary>
+      <GameProvider>
+        <GameLayout />
+      </GameProvider>
+    </ErrorBoundary>
   );
 }

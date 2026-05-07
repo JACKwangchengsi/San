@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { GameHeader } from './layout/GameHeader';
 import { MainArea } from './layout/MainArea';
 import { RightPanel } from './layout/RightPanel';
+import { PanelErrorBoundary } from './PanelErrorBoundary';
 import { applyBirthSettings } from '../utils/birthSettingsApplier';
 import { inferChoiceType } from '../utils/choiceUtils';
 import SFX from '../utils/sfx';
@@ -377,45 +378,49 @@ export const GameLayout: React.FC = () => {
       {state.world.weather.current === 'thunderstorm' && <div className="fixed inset-0 pointer-events-none z-10 bg-blue-950/15 weather-lightning" />}
       {isPoisoned && <div className="fixed inset-0 pointer-events-none z-30 bg-gradient-to-t from-green-900/12 to-transparent animate-pulse-slow" />}
 
-      <GameHeader
-        state={state}
-        worldSeed={worldSeed}
-        isMobileUI={isMobileUI}
-        musicEnabled={musicEnabled}
-        hasCriticalStatus={hasCriticalStatus}
-        isLowHealth={isLowHealth}
-        isHungry={isHungry}
-        isThirsty={isThirsty}
-        isTired={isTired}
-        isStaminaLow={isStaminaLow}
-        deviceMode={deviceMode}
-        onSave={handleSave}
-        onToggleSound={() => { dispatch({ type: 'UPDATE_SETTINGS', payload: { soundEnabled: !state.settings.soundEnabled } }); if (!state.settings.soundEnabled) SFX.click(); }}
-        onToggleMusic={() => { const next = !musicEnabled; setMusicEnabled(next); if (next) { SFX.getCtx(); SFX.startMusic(); } else SFX.stopMusic(); }}
-        onOpenAdmin={() => setShowAdmin(true)}
-        onOpenStartMenu={() => setShowStartMenu(true)}
-        onOpenDeviceSelector={() => setShowDeviceSelector(true)}
-        onOpenSettings={() => setShowSettings(true)}
-        onResetPanelSize={() => { setRightPanelWidth(384); setChatPanelHeight(0); }}
-      />
+      <PanelErrorBoundary panelName="顶部状态栏" compact className="mx-2 mt-1">
+        <GameHeader
+          state={state}
+          worldSeed={worldSeed}
+          isMobileUI={isMobileUI}
+          musicEnabled={musicEnabled}
+          hasCriticalStatus={hasCriticalStatus}
+          isLowHealth={isLowHealth}
+          isHungry={isHungry}
+          isThirsty={isThirsty}
+          isTired={isTired}
+          isStaminaLow={isStaminaLow}
+          deviceMode={deviceMode}
+          onSave={handleSave}
+          onToggleSound={() => { dispatch({ type: 'UPDATE_SETTINGS', payload: { soundEnabled: !state.settings.soundEnabled } }); if (!state.settings.soundEnabled) SFX.click(); }}
+          onToggleMusic={() => { const next = !musicEnabled; setMusicEnabled(next); if (next) { SFX.getCtx(); SFX.startMusic(); } else SFX.stopMusic(); }}
+          onOpenAdmin={() => setShowAdmin(true)}
+          onOpenStartMenu={() => setShowStartMenu(true)}
+          onOpenDeviceSelector={() => setShowDeviceSelector(true)}
+          onOpenSettings={() => setShowSettings(true)}
+          onResetPanelSize={() => { setRightPanelWidth(384); setChatPanelHeight(0); }}
+        />
+      </PanelErrorBoundary>
 
       <main className={`flex-1 flex overflow-hidden min-h-0 ${isMobileUI ? 'flex-col' : 'flex-row'}`}>
-        <MainArea
-          state={state}
-          isMobileUI={isMobileUI}
-          chatPanelHeight={chatPanelHeight}
-          activeChoices={activeChoices}
-          isWaitingAI={isWaitingAI}
-          isProcessing={isProcessing}
-          autoAIEnabled={autoAIEnabled}
-          playerInput={playerInput}
-          onPlayerInputChange={setPlayerInput}
-          onPlayerAction={handlePlayerAction}
-          onChoiceSelect={handleChoiceSelect}
-          onQuickAction={handleQuickAction}
-          onRequestSceneImage={requestSceneImage}
-          onResizeStart={() => { resizingRef.current = 'chat'; }}
-        />
+        <PanelErrorBoundary panelName="主叙事区" className="flex-1 min-w-0 min-h-0 flex">
+          <MainArea
+            state={state}
+            isMobileUI={isMobileUI}
+            chatPanelHeight={chatPanelHeight}
+            activeChoices={activeChoices}
+            isWaitingAI={isWaitingAI}
+            isProcessing={isProcessing}
+            autoAIEnabled={autoAIEnabled}
+            playerInput={playerInput}
+            onPlayerInputChange={setPlayerInput}
+            onPlayerAction={handlePlayerAction}
+            onChoiceSelect={handleChoiceSelect}
+            onQuickAction={handleQuickAction}
+            onRequestSceneImage={requestSceneImage}
+            onResizeStart={() => { resizingRef.current = 'chat'; }}
+          />
+        </PanelErrorBoundary>
 
         {!isMobileUI && (
           <div className="w-2 cursor-col-resize bg-zinc-900/70 hover:bg-amber-900/40 transition border-l border-zinc-800 flex items-center justify-center" onMouseDown={() => { resizingRef.current = 'right'; }} title="拖拽调整侧边栏宽度">
@@ -423,47 +428,49 @@ export const GameLayout: React.FC = () => {
           </div>
         )}
 
-        <RightPanel
-          activeTab={activeTab}
-          onTabChange={(tab) => setActiveTab(tab)}
-          isMobileUI={isMobileUI}
-          rightPanelWidth={rightPanelWidth}
-          state={state}
-          birthSettings={birthSettings}
-          pendingSceneStoryRef={pendingSceneStoryRef}
-          latestStoryText={latestStoryText}
-          pendingSceneAnchorRef={pendingSceneAnchorRef}
-          latestStoryAnchorId={latestStoryAnchorId}
-          sceneRequest={sceneRequest}
-          focusedNPCId={focusedNPCId}
-          onSceneGenerated={handleSceneGenerated}
-          playerInput={playerInput}
-          isProcessing={isProcessing}
-          autoAIEnabled={autoAIEnabled}
-          setAutoAIEnabled={setAutoAIEnabled}
-          npcTalkRequest={npcTalkRequest}
-          webInputDraft={webInputDraft}
-          onWebInputConsumed={() => setWebInputDraft('')}
-          onAIUpdate={handleAIUpdate}
-          onRegisterAIGenerator={(generator) => { aiGeneratorRef.current = generator; if (autoAIEnabled) setAICallback(generator); }}
-          onNPCTalkHandled={() => setNpcTalkRequest(null)}
-          setFocusedNPCId={setFocusedNPCId}
-          npcCountsByLocation={npcCountsByLocation}
-          npcNamesByLocation={npcNamesByLocation}
-          shopCountsByLocation={shopCountsByLocation}
-          factionMarksByLocation={factionMarksByLocation}
-          eventIntensityByLocation={eventIntensityByLocation}
-          handleUseItem={handleUseItem}
-          handleDropItem={handleDropItem}
-          setSelectedItem={setSelectedItem}
-          refillItem={refillItem}
-          handleTalkToNPC={handleTalkToNPC}
-          moveToLocation={moveToLocation}
-          handleSelectNPCByName={handleSelectNPCByName}
-          requestSceneImage={requestSceneImage}
-          setAICallback={setAICallback}
-          aiGeneratorRef={aiGeneratorRef}
-        />
+        <PanelErrorBoundary panelName="右侧面板" className={isMobileUI ? 'w-full' : ''}>
+          <RightPanel
+            activeTab={activeTab}
+            onTabChange={(tab) => setActiveTab(tab)}
+            isMobileUI={isMobileUI}
+            rightPanelWidth={rightPanelWidth}
+            state={state}
+            birthSettings={birthSettings}
+            pendingSceneStoryRef={pendingSceneStoryRef}
+            latestStoryText={latestStoryText}
+            pendingSceneAnchorRef={pendingSceneAnchorRef}
+            latestStoryAnchorId={latestStoryAnchorId}
+            sceneRequest={sceneRequest}
+            focusedNPCId={focusedNPCId}
+            onSceneGenerated={handleSceneGenerated}
+            playerInput={playerInput}
+            isProcessing={isProcessing}
+            autoAIEnabled={autoAIEnabled}
+            setAutoAIEnabled={setAutoAIEnabled}
+            npcTalkRequest={npcTalkRequest}
+            webInputDraft={webInputDraft}
+            onWebInputConsumed={() => setWebInputDraft('')}
+            onAIUpdate={handleAIUpdate}
+            onRegisterAIGenerator={(generator) => { aiGeneratorRef.current = generator; if (autoAIEnabled) setAICallback(generator); }}
+            onNPCTalkHandled={() => setNpcTalkRequest(null)}
+            setFocusedNPCId={setFocusedNPCId}
+            npcCountsByLocation={npcCountsByLocation}
+            npcNamesByLocation={npcNamesByLocation}
+            shopCountsByLocation={shopCountsByLocation}
+            factionMarksByLocation={factionMarksByLocation}
+            eventIntensityByLocation={eventIntensityByLocation}
+            handleUseItem={handleUseItem}
+            handleDropItem={handleDropItem}
+            setSelectedItem={setSelectedItem}
+            refillItem={refillItem}
+            handleTalkToNPC={handleTalkToNPC}
+            moveToLocation={moveToLocation}
+            handleSelectNPCByName={handleSelectNPCByName}
+            requestSceneImage={requestSceneImage}
+            setAICallback={setAICallback}
+            aiGeneratorRef={aiGeneratorRef}
+          />
+        </PanelErrorBoundary>
       </main>
 
       {selectedItem && <Suspense fallback={<div className="h-full min-h-[240px] flex items-center justify-center text-zinc-500"><div className="flex items-center gap-2"><span className="animate-spin">⟳</span>正在载入…</div></div>}><ItemInteraction item={selectedItem} onClose={() => setSelectedItem(null)} /></Suspense>}
