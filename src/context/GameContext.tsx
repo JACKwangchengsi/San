@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useEffect, useReducer, ReactNode, useState, useCallback } from 'react';
+import { logger } from '../utils/logger';
 import {
   GameState, Item, NPC, PlayerState, WorldState, LogEntry,
   Attribute, NPCStats, NPCPersonality, WeatherState,
-  Location, GameSettings, StatKey, RomanceState, CraftingRecipe, AIResponseSummary
+  Location, GameSettings, StatKey, RomanceState, CraftingRecipe, AIResponseSummary,
+  MonsterType
 } from '../types/game';
 
 const INITIAL_DATE = new Date('1203-04-12T09:30:00').getTime();
@@ -349,9 +351,9 @@ type Action =
   | { type: 'LOAD_STATE'; payload: GameState }
   | { type: 'RESET_GAME' }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<GameSettings> }
-  | { type: 'ADD_MONSTER_TYPE'; payload: any }
+  | { type: 'ADD_MONSTER_TYPE'; payload: MonsterType }
   | { type: 'REMOVE_MONSTER_TYPE'; payload: string }
-  | { type: 'UPDATE_MONSTER_TYPE'; payload: { id: string; updates: any } };
+  | { type: 'UPDATE_MONSTER_TYPE'; payload: { id: string; updates: Partial<MonsterType> } };
 
 const getTimeOfDay = (timestamp: number): WorldState['timeOfDay'] => {
   const hour = new Date(timestamp).getHours();
@@ -524,7 +526,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
         const parsed = JSON.parse(saved);
         if (parsed.version === initialState.version || parsed.player?.name) dispatch({ type: 'LOAD_STATE', payload: parsed });
       } catch (e) {
-        console.error('Failed to load save', e);
+        logger.storage.error('Failed to load save', e);
       }
     }
   }, []);
@@ -850,9 +852,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
   const triggerAIGeneration = useCallback((action: string) => {
     if (aiCallback) {
-      aiCallback(action).catch((err) => {
-        console.error('AI generation error:', err);
-        addLog(`【系统错误】AI生成失败: ${err.message}`, 'warning', 5);
+      aiCallback(action).catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.ai.error('AI generation error:', err);
+        addLog(`【系统错误】AI生成失败: ${message}`, 'warning', 5);
       });
     }
   }, [aiCallback]);
