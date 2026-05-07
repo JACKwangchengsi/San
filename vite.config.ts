@@ -8,10 +8,17 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     cssCodeSplit: false,
+    target: 'es2020',
+    minify: 'esbuild',
+    sourcemap: false,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
-        inlineDynamicImports: true
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          utils: ['clsx', 'tailwind-merge', 'date-fns'],
+          icons: ['lucide-react'],
+        },
       }
     }
   },
