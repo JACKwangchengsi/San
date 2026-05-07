@@ -40,6 +40,108 @@ body {
 /* ==================== 选择文字 ==================== */
 ::selection { background: rgba(212, 165, 86, 0.35); color: #fff; text-shadow: 0 0 6px rgba(212, 165, 86, 0.4); }
 
+/* ==================== 无障碍（a11y）增强 ==================== */
+
+/* 跳过导航链接 — 键盘用户按 Tab 可见 */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 8px 24px;
+  background: #d4a556;
+  color: #000;
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.25s ease;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+/* 全局 focus-visible — 替代被 Tailwind 清除的 outline
+   只在键盘导航时显示，鼠标点击不显示 */
+*:focus-visible {
+  outline: 2px solid rgba(212, 165, 86, 0.7) !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
+}
+
+/* 按钮键盘焦点 */
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(212, 165, 86, 0.85) !important;
+  outline-offset: 2px !important;
+}
+
+/* 输入框键盘焦点 — 输入框自身已有 focus 样式，仅增强 */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid rgba(212, 165, 86, 0.5) !important;
+  outline-offset: -1px !important;
+}
+
+/* 屏幕阅读器专用文本 — 视觉隐藏但语音可读 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* aria-live 动态播报区 */
+.aria-live-region {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+/* 减少动画偏好 — prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 高对比度模式适配 */
+@media (prefers-contrast: high) {
+  body {
+    background: #000;
+    color: #fff;
+  }
+  .border-zinc-800,
+  .border-zinc-700 {
+    border-color: #666 !important;
+  }
+  .text-zinc-500,
+  .text-zinc-600,
+  .text-zinc-700 {
+    color: #ccc !important;
+  }
+}
+
 /* ==================== 基础动画关键帧 ==================== */
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeInUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
@@ -245,14 +347,72 @@ body {
 
 /* ==================== 响应式增强 ==================== */
 @media (max-width: 767px) {
-  .mobile-app-shell { font-size: 14px; }
-  .mobile-app-header { padding: 8px 10px !important; }
-  .mobile-panel { border-top: 1px solid rgba(63, 63, 70, 0.6); }
-  .mobile-tabbar { -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  /* 基础字号 */
+  .mobile-app-shell {
+    font-size: 14px;
+    /* 安全区适配 — 刘海屏 / 底部指示条 */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    /* 阻止下拉刷新手势冲突 */
+    overscroll-behavior: contain;
+  }
+  .mobile-app-header {
+    padding: 8px 10px !important;
+    padding-top: calc(8px + env(safe-area-inset-top, 0px)) !important;
+  }
+  .mobile-panel {
+    border-top: 1px solid rgba(63, 63, 70, 0.6);
+    /* 底部面板额外适配 safe-area */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mobile-tabbar {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
   .mobile-tabbar::-webkit-scrollbar { display: none; }
-  .mobile-buttons { -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 4px; }
+  .mobile-buttons {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+  }
   .mobile-buttons::-webkit-scrollbar { display: none; }
-  .mobile-stack { flex-direction: column; gap: 6px; }
+  .mobile-stack {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* iOS 输入框缩放预防 — 16px 是触发阈值 */
+  .mobile-app-shell input,
+  .mobile-app-shell textarea,
+  .mobile-app-shell select {
+    font-size: 16px !important;
+  }
+
+  /* 全局触摸高亮抑制 */
+  .mobile-app-shell * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 触控目标最小尺寸 — WCAG 2.1 要求 ≥44px */
+  .mobile-app-header button,
+  .mobile-tabbar button,
+  .mobile-buttons button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 触摸按下反馈 */
+  .mobile-tabbar button:active,
+  .mobile-buttons button:active {
+    transform: scale(0.94);
+    transition: transform 0.08s ease;
+  }
+
+  /* 底部输入区域安全区适配 */
+  .mobile-input-area {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ==================== 打印样式 ==================== */

@@ -119,9 +119,11 @@ export const RightPanel: React.FC<RightPanelProps> = ({
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex-1 ${isMobileUI ? 'py-2' : 'py-3'} flex flex-col items-center gap-1 text-xs transition ${activeTab === tab.id ? 'bg-zinc-800 text-white border-b-2 border-amber-500' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
+            title={tab.label}
+            aria-label={tab.label}
+            className={`flex-1 ${isMobileUI ? 'py-2.5 min-h-[44px]' : 'py-3'} flex flex-col items-center gap-1 text-xs transition ${activeTab === tab.id ? 'bg-zinc-800 text-white border-b-2 border-amber-500' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'}`}
           >
-            <tab.icon size={isMobileUI ? 14 : 16} />
+            <tab.icon size={isMobileUI ? 15 : 16} />
             {!isMobileUI && <span>{tab.label}</span>}
           </button>
         ))}

@@ -78,24 +78,24 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
           </div>
         )}
         <div className="flex items-center gap-0.5 sm:gap-1.5 bg-zinc-900/60 rounded-lg p-0.5 border border-zinc-800/50">
-          <button onClick={onToggleSound} className={`p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md transition-all duration-200 ${state.settings.soundEnabled ? 'text-green-400 hover:text-green-300' : 'text-zinc-600 hover:text-zinc-500'}`} title={state.settings.soundEnabled ? '关闭音效/背景氛围' : '开启音效/背景氛围'}>
-            {state.settings.soundEnabled ? <Volume2 size={17} /> : <VolumeX size={17} />}
+          <button onClick={onToggleSound} aria-label={state.settings.soundEnabled ? '关闭音效' : '开启音效'} className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md transition-all duration-200 ${state.settings.soundEnabled ? 'text-green-400 hover:text-green-300' : 'text-zinc-600 hover:text-zinc-500'}`} title={state.settings.soundEnabled ? '关闭音效/背景氛围' : '开启音效/背景氛围'}>
+            {state.settings.soundEnabled ? <Volume2 size={isMobileUI ? 19 : 17} /> : <VolumeX size={isMobileUI ? 19 : 17} />}
           </button>
-          <button onClick={onToggleMusic} className={`p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md transition-all duration-200 ${musicEnabled ? 'text-purple-400 hover:text-purple-300' : 'text-zinc-600 hover:text-zinc-500'}`} title={musicEnabled ? '关闭背景音乐' : '开启中国风背景音乐'}>
-            {musicEnabled ? <Music size={17} /> : <Music2 size={17} />}
+          <button onClick={onToggleMusic} aria-label={musicEnabled ? '关闭背景音乐' : '开启背景音乐'} className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md transition-all duration-200 ${musicEnabled ? 'text-purple-400 hover:text-purple-300' : 'text-zinc-600 hover:text-zinc-500'}`} title={musicEnabled ? '关闭背景音乐' : '开启中国风背景音乐'}>
+            {musicEnabled ? <Music size={isMobileUI ? 19 : 17} /> : <Music2 size={isMobileUI ? 19 : 17} />}
           </button>
         </div>
         <div className="w-px h-5 bg-zinc-800/60 hidden sm:block" />
-        <button onClick={onSave} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-green-400 transition-all duration-200" title="保存游戏"><Save size={17} /></button>
-        <button onClick={onOpenAdmin} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-amber-400 transition-all duration-200" title="管理面板"><UserCog size={17} /></button>
-        <button onClick={onOpenStartMenu} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-yellow-400 transition-all duration-200" title="新游戏 / 继续游戏"><RotateCcw size={17} /></button>
-        <button onClick={onOpenDeviceSelector} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all duration-200 text-xs" title="设备模式">
+        <button onClick={onSave} aria-label="保存游戏" className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-green-400 transition-all duration-200`} title="保存游戏"><Save size={isMobileUI ? 19 : 17} /></button>
+        <button onClick={onOpenAdmin} aria-label="管理面板" className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-amber-400 transition-all duration-200`} title="管理面板"><UserCog size={isMobileUI ? 19 : 17} /></button>
+        <button onClick={onOpenStartMenu} aria-label="新游戏或继续" className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-yellow-400 transition-all duration-200`} title="新游戏 / 继续游戏"><RotateCcw size={isMobileUI ? 19 : 17} /></button>
+        <button onClick={onOpenDeviceSelector} aria-label="切换设备模式" className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all duration-200 text-xs`} title="设备模式">
           {deviceMode === 'mobile' ? '📱' : deviceMode === 'desktop' ? '💻' : '🔄'}
         </button>
         {!isMobileUI && (
           <button onClick={onResetPanelSize} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-amber-300 transition-all duration-200" title="重置区域尺寸">↔</button>
         )}
-        <button onClick={onOpenSettings} className="p-1.5 sm:p-2 hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all duration-200" title="界面与系统设置"><Settings size={17} /></button>
+        <button onClick={onOpenSettings} aria-label="设置" className={`${isMobileUI ? 'p-2.5 min-w-[44px] min-h-[44px]' : 'p-1.5 sm:p-2'} hover:bg-zinc-800 rounded-md text-zinc-500 hover:text-white transition-all duration-200`} title="界面与系统设置"><Settings size={isMobileUI ? 19 : 17} /></button>
       </div>
     </header>
   );

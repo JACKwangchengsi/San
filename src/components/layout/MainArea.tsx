@@ -89,31 +89,39 @@ export const MainArea: React.FC<MainAreaProps> = ({
       {/* 快捷操作按钮 */}
       <div className={`${isMobileUI ? 'px-2 py-2 gap-1' : 'px-4 py-2 gap-2'} bg-zinc-900/80 border-t border-zinc-800/60 flex overflow-x-auto mobile-buttons backdrop-blur-sm`}>
         {quickActions.map((action) => (
-          <button key={action.id} onClick={() => onQuickAction(action.id)} className={`flex items-center gap-1 ${isMobileUI ? 'px-2 py-2 text-xs' : 'px-3 py-1.5 text-xs sm:text-sm'} rounded-lg text-white whitespace-nowrap transition-all duration-200 hover:scale-[1.02] active:scale-[0.96] ${action.color} shadow-sm hover:shadow-md`}>
-            <action.icon size={isMobileUI ? 12 : 14} />
+          <button
+            key={action.id}
+            onClick={() => onQuickAction(action.id)}
+            title={isMobileUI ? action.label : undefined}
+            aria-label={action.label}
+            className={`flex items-center gap-1 ${isMobileUI ? 'px-2.5 py-2.5 text-xs min-w-[44px] min-h-[44px] justify-center' : 'px-3 py-1.5 text-xs sm:text-sm'} rounded-lg text-white whitespace-nowrap transition-all duration-200 hover:scale-[1.02] active:scale-[0.96] ${action.color} shadow-sm hover:shadow-md`}
+          >
+            <action.icon size={isMobileUI ? 15 : 14} />
             {!isMobileUI && action.label}
           </button>
         ))}
       </div>
 
       {/* 输入框 */}
-      <form onSubmit={onPlayerAction} className={`${isMobileUI ? 'p-2' : 'p-4'} bg-zinc-900/70 border-t border-zinc-800/60 backdrop-blur-sm`}>
+      <form onSubmit={onPlayerAction} className={`${isMobileUI ? 'p-2 mobile-input-area' : 'p-4'} bg-zinc-900/70 border-t border-zinc-800/60 backdrop-blur-sm`}>
         <div className="relative">
           <input
             type="text"
             value={playerInput}
             onChange={(e) => onPlayerInputChange(e.target.value)}
             placeholder={activeChoices.length > 0 ? `输入 1-${activeChoices.length} 快速选择` : (isMobileUI ? '输入行动...' : '输入你的行动...（例如：向掌柜打听黑水峡）')}
-            className={`w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl ${isMobileUI ? 'p-3 pr-12 text-sm' : 'p-4 pr-14'} text-white placeholder-zinc-600 focus:ring-2 focus:ring-amber-600/60 focus:border-amber-600/50 focus:outline-none transition-all duration-300 input-jianghu`}
+            className={`w-full bg-zinc-900/80 border border-zinc-700/80 rounded-xl ${isMobileUI ? 'py-3.5 pl-3 pr-14 text-base' : 'p-4 pr-14'} text-white placeholder-zinc-600 focus:ring-2 focus:ring-amber-600/60 focus:border-amber-600/50 focus:outline-none transition-all duration-300 input-jianghu`}
             autoFocus
             disabled={isProcessing}
+            enterKeyHint="send"
           />
           <button
             type="submit"
             disabled={isProcessing || !playerInput.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 disabled:from-zinc-700 disabled:to-zinc-800 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 shadow-md shadow-amber-900/20 hover:shadow-lg hover:shadow-amber-900/30 active:scale-95"
+            className={`absolute right-2 top-1/2 -translate-y-1/2 ${isMobileUI ? 'p-3 min-w-[44px] min-h-[44px]' : 'p-2.5'} bg-gradient-to-br from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 disabled:from-zinc-700 disabled:to-zinc-800 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-200 shadow-md shadow-amber-900/20 hover:shadow-lg hover:shadow-amber-900/30 active:scale-95`}
+            aria-label="发送行动"
           >
-            <Send size={18} />
+            <Send size={isMobileUI ? 20 : 18} />
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 items-center">

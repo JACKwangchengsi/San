@@ -4,12 +4,12 @@
   "description": "高武到玄幻的本地可运行武侠文字冒险游戏，AI驱动无限剧情，沉浸式江湖体验",
   "start_url": ".",
   "display": "standalone",
-  "display_override": ["window-controls-overlay"],
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#09090b",
   "theme_color": "#18181b",
   "lang": "zh-CN",
   "dir": "ltr",
-  "orientation": "any",
+  "orientation": "portrait",
   "categories": ["games", "entertainment"],
   "scope": ".",
   "icons": [
@@ -20,7 +20,22 @@
       "purpose": "any maskable"
     }
   ],
+  "iarc_rating_id": "",
   "screenshots": [],
-  "shortcuts": [],
+  "shortcuts": [
+    {
+      "name": "新游戏",
+      "short_name": "新游戏",
+      "description": "开始新的江湖冒险",
+      "url": ".",
+      "icons": [
+        {
+          "src": "./icon.svg",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
   "prefer_related_applications": false
 }

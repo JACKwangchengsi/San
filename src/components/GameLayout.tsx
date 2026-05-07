@@ -85,6 +85,15 @@ export const GameLayout: React.FC = () => {
   const pendingSceneAnchorRef = useRef<string | null>(null);
   const resizingRef = useRef<null | 'right' | 'chat'>(null);
 
+  // a11y: 屏幕阅读器播报工具函数 — 清空后下一帧再写入以确保重复播报
+  const announceToScreenReader = useCallback((message: string) => {
+    const el = document.getElementById('aria-live-announcer');
+    if (el) {
+      el.textContent = '';
+      requestAnimationFrame(() => { el.textContent = message; });
+    }
+  }, []);
+
   const latestStoryText = useMemo(() => {
     const latest = [...state.logs].reverse().find((l) => ['ai', 'narrative', 'dialogue'].includes(l.type));
     return latest?.text || '';
@@ -279,11 +288,11 @@ export const GameLayout: React.FC = () => {
       const changedNpcIds: string[] = [];
       const discoveredLocationIds: string[] = [];
 
-      if (mergedData.story_text) { const normalizedStory = mergedData.story_text.replace(/\s+/g, ' ').trim(); pendingSceneStoryRef.current = normalizedStory; const aiLog = createLog(`ai_${Date.now()}`, normalizedStory, 'ai', state.world.time); mainLogId = aiLog.id; pendingSceneAnchorRef.current = aiLog.id; dispatch({ type: 'ADD_LOG', payload: aiLog }); }
+      if (mergedData.story_text) { const normalizedStory = mergedData.story_text.replace(/\s+/g, ' ').trim(); pendingSceneStoryRef.current = normalizedStory; const aiLog = createLog(`ai_${Date.now()}`, normalizedStory, 'ai', state.world.time); mainLogId = aiLog.id; pendingSceneAnchorRef.current = aiLog.id; dispatch({ type: 'ADD_LOG', payload: aiLog }); const brief = normalizedStory.slice(0, 80); announceToScreenReader(`新剧情：${brief}${normalizedStory.length > 80 ? '…' : ''}`); }
       if (mergedData.scene_description) { const sceneLog = createLog(`scene_${Date.now()}`, mergedData.scene_description, 'narrative', state.world.time); if (!mainLogId) pendingSceneAnchorRef.current = sceneLog.id; dispatch({ type: 'ADD_LOG', payload: sceneLog }); }
       if (mergedData.dialogue && Array.isArray(mergedData.dialogue)) { const storyText = (mergedData.story_text || '').replace(/\s+/g, ''); mergedData.dialogue.forEach((d, i) => { const combined = `${d.speaker}${d.text}`.replace(/\s+/g, ''); const onlyText = (d.text || '').replace(/\s+/g, ''); if (storyText.includes(combined) || (onlyText && storyText.includes(onlyText))) return; setTimeout(() => dispatch({ type: 'ADD_LOG', payload: createLog(`dialogue_${Date.now()}_${i}`, `${d.speaker}${d.mood ? `（${d.mood}）` : ''}：${d.text}`, 'dialogue', state.world.time) }), i * 200); }); }
       if (mergedData.new_locations?.length) { mergedData.new_locations.forEach((rawLoc) => { if (!rawLoc?.name) return; const created = ensureLocationExists(rawLoc.name, state.world.location); if (!discoveredLocationIds.includes(created.id)) discoveredLocationIds.push(created.id); const mergedUpdates: Record<string, unknown> = {}; if (typeof rawLoc.description === 'string' && rawLoc.description.trim()) mergedUpdates.description = rawLoc.description.trim(); if (typeof rawLoc.dangerLevel === 'number') mergedUpdates.dangerLevel = Math.max(0, Math.min(100, rawLoc.dangerLevel)); if (typeof rawLoc.noiseLevel === 'number') mergedUpdates.noiseLevel = Math.max(0, Math.min(100, rawLoc.noiseLevel)); if (typeof rawLoc.lightLevel === 'number') mergedUpdates.lightLevel = Math.max(0, Math.min(100, rawLoc.lightLevel)); if (typeof rawLoc.hasWater === 'boolean') mergedUpdates.hasWater = rawLoc.hasWater; if (typeof rawLoc.isLocked === 'boolean') mergedUpdates.isLocked = rawLoc.isLocked; if (Array.isArray(rawLoc.connectedLocations) && rawLoc.connectedLocations.length) { const normalizedConnected = rawLoc.connectedLocations.map((entry) => state.locations.find((l) => l.name === entry || l.id === entry)?.id).filter((id): id is string => !!id); mergedUpdates.connectedLocations = Array.from(new Set([...(created.connectedLocations || []), ...normalizedConnected])); } if (Object.keys(mergedUpdates).length) dispatch({ type: 'UPDATE_LOCATION', payload: { id: created.id, updates: mergedUpdates as Partial<Location> } }); }); }
-      if (mergedData.new_items?.length) { mergedData.new_items.forEach((item, index) => { if (!item.name || item.name.length < 2 || item.name.length > 14) return; setTimeout(() => { const newItem: Item = { id: item.id || `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: item.name || '未知物品', description: item.description || '', type: item.type || 'misc', rarity: item.rarity || 'common', quantity: item.quantity || 1, maxStack: item.maxStack || 99, weight: item.weight || 0.1, isConsumable: item.isConsumable ?? ['food', 'drink', 'medicine'].includes(item.type || ''), isReusable: item.isReusable ?? true, createdAt: Date.now(), modifiedAt: Date.now(), effects: item.effects || undefined }; dispatch({ type: 'ADD_ITEM', payload: newItem }); if (state.settings.soundEnabled) SFX.pickup(); addLog(`📦 获得物品: ${newItem.name}${newItem.quantity > 1 ? ` x${newItem.quantity}` : ''}`, 'discovery', 2); }, index * 180); }); }
+      if (mergedData.new_items?.length) { mergedData.new_items.forEach((item, index) => { if (!item.name || item.name.length < 2 || item.name.length > 14) return; setTimeout(() => { const newItem: Item = { id: item.id || `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: item.name || '未知物品', description: item.description || '', type: item.type || 'misc', rarity: item.rarity || 'common', quantity: item.quantity || 1, maxStack: item.maxStack || 99, weight: item.weight || 0.1, isConsumable: item.isConsumable ?? ['food', 'drink', 'medicine'].includes(item.type || ''), isReusable: item.isReusable ?? true, createdAt: Date.now(), modifiedAt: Date.now(), effects: item.effects || undefined }; dispatch({ type: 'ADD_ITEM', payload: newItem }); if (state.settings.soundEnabled) SFX.pickup(); addLog(`📦 获得物品: ${newItem.name}${newItem.quantity > 1 ? ` x${newItem.quantity}` : ''}`, 'discovery', 2); announceToScreenReader(`获得物品：${newItem.name}${newItem.quantity > 1 ? `，${newItem.quantity}个` : ''}`); }, index * 180); }); }
       if (mergedData.removed_items?.length) { mergedData.removed_items.forEach((entry) => { const byId = state.player.inventory.find((i) => i.id === entry); const byName = state.player.inventory.find((i) => i.name === entry); const target = byId || byName; if (!target) return; if (target.quantity > 1) dispatch({ type: 'UPDATE_ITEM', payload: { id: target.id, updates: { quantity: target.quantity - 1 } } }); else dispatch({ type: 'REMOVE_ITEM', payload: target.id }); addLog(`📤 失去物品: ${target.name}`, 'system', 1); }); }
       if (mergedData.npc_updates?.length) { mergedData.npc_updates.forEach(update => { const npc = state.npcs.find(n => n.id === update.id) || state.npcs.find(n => n.name === update.id); if (!npc) return; const mappedChanges: Partial<NPC> = { ...update.changes }; if (mappedChanges.status === 'corrupted') mappedChanges.status = 'poisoned'; if (mappedChanges.location && mappedChanges.location !== npc.location) ensureLocationExists(mappedChanges.location, npc.location); dispatch({ type: 'UPDATE_NPC', payload: { id: npc.id, updates: mappedChanges } }); if (mappedChanges.status === 'dead') addLog(`☠️ ${npc.name} 已身亡。`, 'death', 5); else if (mappedChanges.status === 'poisoned') addLog(`⚠️ ${npc.name}似乎中了毒或受了暗伤。`, 'warning', 4); if (mappedChanges.location && mappedChanges.location !== npc.location) { changedNpcIds.push(npc.id); addLog(`${npc.name}动身前往了${mappedChanges.location}。`, 'system', 2); } }); }
       if (mergedData.new_npcs?.length) { mergedData.new_npcs.forEach(raw => { if (!raw.name || state.npcs.some(n => n.name === raw.name)) return; const npc: NPC = { id: `npc_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: raw.name, age: raw.age || 22, gender: (raw.gender as NPC['gender']) || 'male', occupation: raw.occupation || '江湖客', description: raw.description || '一位初见的江湖人物。', fertility: 50, isPregnant: false, pregnancyWeeks: 0, appearance: raw.appearance || '', personality: raw.personality || { bravery: 50, intelligence: 50, loyalty: 50, morality: 50, aggression: 30, sociability: 50 }, personalityTags: raw.personalityTags || ['谨慎'], attitude: raw.attitude || 'neutral', relation: raw.relation || 0, trust: raw.trust || 0, fear: raw.fear || 0, location: raw.location || state.world.location, inventory: raw.inventory || [], equipment: {}, status: (raw.status as NPC['status']) || 'alive', stats: raw.stats || { health: 100, maxHealth: 100, hunger: 80, thirst: 80, energy: 80, combat: 10, speed: 50, perception: 50, infection: 0 }, skills: {}, memories: [], dialogueHistory: [], goals: ['生存'], faction: undefined, isRecruited: false, notes: '', createdAt: Date.now(), modifiedAt: Date.now() }; dispatch({ type: 'ADD_NPC', payload: npc }); addLog(`遇到了新人物：${npc.name}`, 'event', 3); }); }
@@ -332,7 +341,7 @@ export const GameLayout: React.FC = () => {
           addLog(`🔍 发现：${text}`, 'discovery', 2);
         });
       }
-      if (mergedData.choices?.length) setActiveChoices(mergedData.choices.map((c, i) => ({ id: c.id || `choice_${i}`, text: c.text, consequence_hint: c.consequence_hint, type: inferChoiceType(c.text) }))); else setActiveChoices([]);
+      if (mergedData.choices?.length) { const mapped = mergedData.choices.map((c, i) => ({ id: c.id || `choice_${i}`, text: c.text, consequence_hint: c.consequence_hint, type: inferChoiceType(c.text) })); setActiveChoices(mapped); announceToScreenReader(`可选行动：${mapped.map(c => c.text).join('；')}`); } else setActiveChoices([]);
       if (mergedData.location_change || changedNpcIds.length || discoveredLocationIds.length) { setMapHighlights({ movedTo: mergedData.location_change || undefined, movedNpcIds: changedNpcIds, discoveredLocationIds }); setTimeout(() => setMapHighlights({ movedNpcIds: [], discoveredLocationIds: [] }), 3500); }
       const summary: AIResponseSummary = { cultivationChanged: !!(mergedData.martial_progress || mergedData.realm_breakthrough), recipesUnlocked: (mergedData.recipe_discoveries || []).filter(Boolean), factionChanges: (mergedData.faction_reputation_changes || []).map((f) => f.faction), injuryChangeCount: (mergedData.injury_changes?.length || 0) + (mergedData.player_injuries?.length || 0), relationChangedNpcNames: (mergedData.npc_relationship_changes || []).map((r) => r.npcName || '').filter(Boolean), economyChanged: !!mergedData.economy_changes, bodyConditionChanged: !!mergedData.body_condition_changes, timestamp: Date.now() };
       dispatch({ type: 'SET_AI_RESPONSE_SUMMARY', payload: summary });
@@ -340,7 +349,7 @@ export const GameLayout: React.FC = () => {
       setPlayerInput('');
     } catch (error) { logger.game.error('AI Update Error:', error); addLog(`【系统错误】处理AI响应时出错：${error instanceof Error ? error.message : '未知错误'}`, 'warning', 5); } finally { setIsProcessing(false); }
     // 标记: SECTION::AI_UPDATE_END
-  }, [dispatch, state, addLog, earnMoney, moveToLocation, orchestratorSettings, addNoise]);
+  }, [dispatch, state, addLog, earnMoney, moveToLocation, orchestratorSettings, addNoise, announceToScreenReader]);
 
   // ---- Small handlers ----
   const handleAdminUpdate = useCallback((type: string, payload: unknown) => { dispatch({ type, payload } as Action); }, [dispatch]);
@@ -369,6 +378,10 @@ export const GameLayout: React.FC = () => {
   // ---- Render ----
   return (
     <div className={`min-h-screen bg-jianghu-gradient text-zinc-300 font-sans selection:bg-amber-900 selection:text-white flex flex-col mobile-app-shell ${isLowHealth ? 'animate-danger-pulse' : ''}`}>
+      {/* a11y: 跳过导航链接，键盘用户可直达主内容区 */}
+      <a href="#main-content" className="skip-link">跳到主要内容</a>
+      {/* a11y: aria-live 区域供屏幕阅读器动态播报游戏事件 */}
+      <div id="aria-live-announcer" className="sr-only" aria-live="polite" aria-atomic="true" />
       <div className="noise-overlay" />
       <div className="fixed inset-0 pointer-events-none z-0 bg-[radial-gradient(ellipse_at_top,rgba(212,165,86,0.03),transparent_60%)]" />
       {isNight && <div className="fixed inset-0 pointer-events-none z-10 bg-gradient-to-b from-blue-950/30 via-blue-950/15 to-transparent transition-opacity duration-1000" />}
@@ -402,7 +415,7 @@ export const GameLayout: React.FC = () => {
         />
       </PanelErrorBoundary>
 
-      <main className={`flex-1 flex overflow-hidden min-h-0 ${isMobileUI ? 'flex-col' : 'flex-row'}`}>
+      <main id="main-content" aria-label="游戏主区域" tabIndex={-1} className={`flex-1 flex overflow-hidden min-h-0 ${isMobileUI ? 'flex-col' : 'flex-row'}`}>
         <PanelErrorBoundary panelName="主叙事区" className="flex-1 min-w-0 min-h-0 flex">
           <MainArea
             state={state}
