@@ -251,7 +251,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ isMobile }) => {
           { key: 'sell', label: '卖物', Icon: Coins, show: isMarket },
           { key: 'work', label: '活计', Icon: Hammer, show: canWork }
         ] as const).filter(t => t.show).map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key as any)} className={`flex-1 py-2 px-2 text-xs transition-colors whitespace-nowrap ${activeTab === tab.key ? 'bg-amber-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'}`}>
+          <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`flex-1 py-2 px-2 text-xs transition-colors whitespace-nowrap ${activeTab === tab.key ? 'bg-amber-900/50 text-yellow-300 border-b-2 border-yellow-500' : 'text-gray-400 hover:text-white hover:bg-gray-700/50'}`}>
             <tab.Icon size={13} className={isMobile ? '' : 'mr-1 inline'} />
             {!isMobile && <span>{tab.label}</span>}
           </button>

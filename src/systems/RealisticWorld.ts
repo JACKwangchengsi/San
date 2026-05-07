@@ -459,7 +459,7 @@ export const calculateFoodFreshness = (
   if (item.name.includes('干') || item.name.includes('熏')) rate *= 0.2;
   if (item.name.includes('腌') || item.name.includes('咸')) rate *= 0.3;
   
-  const currentFreshness = (item as any).freshness ?? 100;
+  const currentFreshness = (item as Item & { freshness?: number }).freshness ?? 100;
   return Math.max(0, currentFreshness - rate * hoursPassed);
 };
 

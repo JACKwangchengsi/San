@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import { Item, ItemType } from '../types/game';
 import { Hammer, ChevronRight, ChevronDown, AlertTriangle, Clock, Zap, Sword, Pill, Wrench, UtensilsCrossed, Shield } from 'lucide-react';
 import SFX from '../utils/sfx';
 
@@ -102,11 +103,11 @@ export const CraftingPanel: React.FC = () => {
       const r = recipe.result;
       dispatch({ type:'ADD_ITEM', payload:{
         id:`crafted_${Date.now()}`, name:r.name, description:r.desc,
-        type:r.type as any, rarity:'uncommon', quantity:r.qty,
+        type:r.type as ItemType, rarity:'uncommon', quantity:r.qty,
         maxStack:10, weight:0.3,
         isConsumable: ['food','drink','medicine'].includes(r.type),
         isReusable: !['food','drink','medicine'].includes(r.type),
-        effects: r.effects as any, weaponData: r.weaponData as any,
+        effects: r.effects as Item['effects'], weaponData: r.weaponData as Item['weaponData'],
         durability: r.durability, maxDurability: r.durability,
         createdAt:Date.now(), modifiedAt:Date.now()
       }});

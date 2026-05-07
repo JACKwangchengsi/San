@@ -61,7 +61,7 @@ const BirthSettingsPanel: React.FC<BirthSettingsPanelProps> = ({ onComplete }) =
     }
     onComplete({
       ...settings,
-      origin: (settings.origin === 'beggar' ? 'begger' : settings.origin) as any,
+      origin: (settings.origin === 'beggar' ? 'begger' : settings.origin) as BirthSettings['origin'],
       temperament: extra.temper,
       goal: extra.goal,
       bottomLine: extra.taboo,
@@ -161,7 +161,7 @@ const BirthSettingsPanel: React.FC<BirthSettingsPanelProps> = ({ onComplete }) =
                 <div className="flex items-center gap-2 text-sm text-amber-400 font-semibold"><Shield size={15} />出身背景</div>
                 <div className="grid grid-cols-1 gap-2">
                   {origins.map((origin) => (
-                    <button key={origin.key} onClick={() => setSettings({ ...settings, origin: origin.key as any })}
+                    <button key={origin.key} onClick={() => setSettings({ ...settings, origin: origin.key as BirthSettings['origin'] })}
                       className={`p-3.5 rounded-xl border text-left transition-all duration-300 ${
                         settings.origin === origin.key
                           ? 'bg-amber-900/30 border-amber-500/60 shadow-md shadow-amber-900/20 scale-[1.01]'
@@ -187,7 +187,7 @@ const BirthSettingsPanel: React.FC<BirthSettingsPanelProps> = ({ onComplete }) =
                 <div className="flex items-center gap-2 text-sm text-amber-400 font-semibold"><BookOpen size={15} />穿越前的身份</div>
                 <div className="grid grid-cols-1 gap-2">
                   {memories.map((memory) => (
-                    <button key={memory.key} onClick={() => setSettings({ ...settings, memory: memory.key as any })}
+                    <button key={memory.key} onClick={() => setSettings({ ...settings, memory: memory.key as BirthSettings['memory'] })}
                       className={`p-3.5 rounded-xl border text-left transition-all duration-300 ${
                         settings.memory === memory.key
                           ? 'bg-purple-900/30 border-purple-500/60 shadow-md shadow-purple-900/20 scale-[1.01]'
@@ -213,7 +213,7 @@ const BirthSettingsPanel: React.FC<BirthSettingsPanelProps> = ({ onComplete }) =
                 <div className="flex items-center gap-2 text-sm text-amber-400 font-semibold"><Heart size={15} />初始性格特质</div>
                 <div className="grid grid-cols-2 gap-2">
                   {traits.map((trait) => (
-                    <button key={trait.key} onClick={() => setSettings({ ...settings, trait: trait.key as any })}
+                    <button key={trait.key} onClick={() => setSettings({ ...settings, trait: trait.key as BirthSettings['trait'] })}
                       className={`p-3 rounded-xl border text-left transition-all duration-300 ${
                         settings.trait === trait.key
                           ? 'bg-red-900/30 border-red-500/60 shadow-md shadow-red-900/20 scale-[1.02]'

@@ -1,5 +1,5 @@
 // 真实世界模拟系统
-import { GameState, NPC, LogEntry } from '../types/game';
+import { GameState, NPC, LogEntry, WeatherType } from '../types/game';
 
 // 十二时辰系统
 export const SHICHEN = [
@@ -207,7 +207,7 @@ export const simulateWeather = (state: GameState): Partial<GameState['world']['w
   const newTemp = Math.round(baseTemp + tempVariation * hourFactor + (Math.random() - 0.5) * 4);
   
   return {
-    current: newWeather as any,
+    current: newWeather as WeatherType,
     temperature: newTemp,
   };
 };

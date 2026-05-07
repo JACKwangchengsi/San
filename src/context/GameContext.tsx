@@ -326,7 +326,7 @@ const initialState: GameState = {
   totalSessions: 1
 };
 
-type Action =
+export type Action =
   | { type: 'ADD_LOG'; payload: LogEntry }
   | { type: 'ADD_LOGS'; payload: LogEntry[] }
   | { type: 'CLEAR_LOGS' }

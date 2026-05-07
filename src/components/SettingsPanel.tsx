@@ -5,7 +5,7 @@ import { X, Volume2, Type, Moon, Save, Smartphone, Monitor, Bot, Image as ImageI
 interface SettingsPanelProps {
   state: GameState;
   onClose: () => void;
-  onUpdate: (type: string, payload: any) => void;
+  onUpdate: (type: string, payload: unknown) => void;
   deviceMode: 'auto' | 'mobile' | 'desktop';
   setDeviceMode: (mode: 'auto' | 'mobile' | 'desktop') => void;
 }

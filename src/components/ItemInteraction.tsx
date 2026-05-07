@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Item } from '../types/game';
+import { Item, ItemType } from '../types/game';
 import { useGame } from '../context/GameContext';
 import { getItemVisual, getItemTypeLabel } from '../utils/itemVisuals';
 
@@ -51,7 +51,7 @@ const ItemInteraction: React.FC<ItemInteractionProps> = ({ item, onClose }) => {
         id: `crafted_${Date.now()}`,
         name: recipe.result.name,
         description: recipe.result.description,
-        type: recipe.result.type as any,
+        type: recipe.result.type as ItemType,
         rarity: 'uncommon', quantity: 1, maxStack: 10, weight: 0.3,
         isConsumable: recipe.result.type === 'medicine' || recipe.result.type === 'food' || recipe.result.type === 'drink',
         isReusable: recipe.result.type === 'tool' || recipe.result.type === 'weapon',

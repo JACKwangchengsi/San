@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { AIPromptSettings, GameState, NPC, StatKey, Location, Item, OrchestratorSettings } from '../types/game';
+import { AIPromptSettings, GameState, NPC, StatKey, Location, Item, ItemType, RomanceState, OrchestratorSettings } from '../types/game';
 import { createItem, createNPCPersonality, createNPCStats } from '../context/GameContext';
 import RelationshipGraph from './RelationshipGraph';
 import { loadCrashLogs, clearCrashLogs } from '../utils/crashLogger';
@@ -12,7 +12,7 @@ import {
 
 interface AdminPanelProps {
   state: GameState;
-  onUpdate: (type: string, payload: any) => void;
+  onUpdate: (type: string, payload: unknown) => void;
   onClose: () => void;
   onGeneratePlayerPortrait?: () => void;
   onGenerateNPCPortrait?: (npc: NPC) => void;
@@ -67,15 +67,15 @@ const loadPortraitMap = (): Record<string, PortraitInfo> => { try { return JSON.
 const savePortraitMap = (map: Record<string, PortraitInfo>) => localStorage.setItem(PORTRAIT_KEY, JSON.stringify(map));
 const loadPlayerPortrait = (): PlayerPortraitInfo | null => { try { return JSON.parse(localStorage.getItem(PLAYER_PORTRAIT_KEY) || 'null'); } catch { return null; } };
 const savePlayerPortrait = (portrait: PlayerPortraitInfo | null) => portrait ? localStorage.setItem(PLAYER_PORTRAIT_KEY, JSON.stringify(portrait)) : localStorage.removeItem(PLAYER_PORTRAIT_KEY);
-const asItemNames = (value: any) => {
+const asItemNames = (value: unknown) => {
   if (!value) return '无';
-  if (Array.isArray(value)) return value.map((v) => typeof v === 'string' ? v : v?.name || '').filter(Boolean).join('、') || '无';
+  if (Array.isArray(value)) return value.map((v) => typeof v === 'string' ? v : (v as Record<string, unknown>)?.name || '').filter(Boolean).join('、') || '无';
   if (typeof value === 'string') return value;
-  if (value?.name) return value.name;
+  if ((value as Record<string, unknown>)?.name) return (value as Record<string, unknown>).name as string;
   return '无';
 };
-const makeItemsFromText = (prefix: string, npcId: string, text: string, type: any = 'misc') =>
-  text.split(/[、,，]/).map(v => v.trim()).filter(Boolean).map((name, idx) => createItem({ id: `${prefix}_${npcId}_${idx}_${Date.now()}`, name, type, description: '后台录入' }));
+const makeItemsFromText = (prefix: string, npcId: string, text: string, type: string = 'misc') =>
+  text.split(/[、,，]/).map(v => v.trim()).filter(Boolean).map((name, idx) => createItem({ id: `${prefix}_${npcId}_${idx}_${Date.now()}`, name, type: type as Item['type'], description: '后台录入' }));
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose, onGeneratePlayerPortrait, onGenerateNPCPortrait }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -88,7 +88,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
   const [itemFilter, setItemFilter] = useState('all');
   const [eventFilter, setEventFilter] = useState('all');
   const [newItemName, setNewItemName] = useState('');
-  const [newItemType, setNewItemType] = useState('misc');
+  const [newItemType, setNewItemType] = useState<ItemType>('misc');
   const [newItemDesc, setNewItemDesc] = useState('');
   const [newNPCName, setNewNPCName] = useState('');
   const [newNPCAge, setNewNPCAge] = useState(20);
@@ -265,8 +265,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
   const handleAddItem = () => {
     if (!newItemName.trim()) return;
     const isConsumable = ['food', 'drink', 'medicine', 'consumable'].includes(newItemType);
-    const effects = newItemType === 'food' ? [{ stat: 'hunger', value: 20 }] : newItemType === 'drink' ? [{ stat: 'thirst', value: 25 }] : newItemType === 'medicine' ? [{ stat: 'health', value: 20 }] : undefined;
-    onUpdate('ADD_ITEM', createItem({ id: `admin_item_${Date.now()}`, name: newItemName, description: newItemDesc || '江湖物品', type: newItemType as any, isConsumable, effects: effects as any }));
+    const effects: Item['effects'] = newItemType === 'food' ? [{ stat: 'hunger', value: 20 }] : newItemType === 'drink' ? [{ stat: 'thirst', value: 25 }] : newItemType === 'medicine' ? [{ stat: 'health', value: 20 }] : undefined;
+    onUpdate('ADD_ITEM', createItem({ id: `admin_item_${Date.now()}`, name: newItemName, description: newItemDesc || '江湖物品', type: newItemType, isConsumable, effects }));
     setNewItemName(''); setNewItemDesc('');
   };
 
@@ -375,7 +375,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
     reader.readAsText(file);
   };
 
-  const renderTopStatCard = (label: string, value: any, icon?: React.ReactNode, color = 'text-white') => (
+  const renderTopStatCard = (label: string, value: React.ReactNode, icon?: React.ReactNode, color = 'text-white') => (
     <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-3">
       <div className="text-[11px] text-zinc-500 flex items-center gap-1">{icon}{label}</div>
       <div className={`text-xl font-bold mt-1 ${color}`}>{value}</div>
@@ -572,14 +572,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                         <label className="block text-zinc-400 text-xs">门派 / 传承</label>
                         <input value={state.player.sect || ''} onChange={(e)=>onUpdate('UPDATE_PLAYER',{ sect:e.target.value })} className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white" />
                         <label className="block text-zinc-400 text-xs">武学列表（格式：名字:等级）</label>
-                        <textarea value={(state.player.martialArts || []).map((m:any)=>`${m.name}:${m.level}`).join('\n')} onChange={(e)=>{
+                        <textarea value={(state.player.martialArts || []).map((m) => `${m.name}:${m.level}`).join('\n')} onChange={(e) => {
                           const martialArts = e.target.value.split('\n').map((line:string, idx:number)=>line.trim()).filter(Boolean).map((line:string, idx:number)=>{ const [name, level] = line.split(':'); return { id:`ma_${idx}_${Date.now()}`, name:name?.trim()||`武学${idx+1}`, level:Number(level)||1, description:'后台录入武学', style:'mixed' as const }; });
                           onUpdate('UPDATE_PLAYER',{ martialArts });
                         }} className="w-full h-40 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white resize-none" />
                       </div>
                       <div className="space-y-3">
                         <label className="block text-zinc-400 text-xs">技能列表（格式：名字:等级）</label>
-                        <textarea value={(state.player.skills || []).map((s:any)=>`${s.name}:${s.level}`).join('\n')} onChange={(e)=>{
+                        <textarea value={(state.player.skills || []).map((s) => `${s.name}:${s.level}`).join('\n')} onChange={(e) => {
                           const skills = e.target.value.split('\n').map((line:string)=>line.trim()).filter(Boolean).map((line:string, idx:number)=>{ const [name, level] = line.split(':'); return { id:`skill_${idx}_${Date.now()}`, name:name?.trim()||`技能${idx+1}`, description:'后台录入技能', level:Number(level)||1, maxLevel:10, experience:0, expToNextLevel:100, category:'survival' as const }; });
                           onUpdate('UPDATE_PLAYER',{ skills });
                         }} className="w-full h-40 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white resize-none" />
@@ -632,7 +632,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                   <div className="grid md:grid-cols-2 gap-3 text-sm">
                     <input value={newNPCName} onChange={(e)=>setNewNPCName(e.target.value)} placeholder="姓名" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white" />
                     <input type="number" value={newNPCAge} onChange={(e)=>setNewNPCAge(Number(e.target.value)||20)} placeholder="年龄" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white" />
-                    <select value={newNPCGender} onChange={(e)=>setNewNPCGender(e.target.value as any)} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white"><option value="male">男</option><option value="female">女</option><option value="other">其他</option></select>
+                    <select value={newNPCGender} onChange={(e)=>setNewNPCGender(e.target.value as 'male' | 'female' | 'other')} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white"><option value="male">男</option><option value="female">女</option><option value="other">其他</option></select>
                     <input value={newNPCOccupation} onChange={(e)=>setNewNPCOccupation(e.target.value)} placeholder="身份/职业" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white" />
                     <input value={newNPCLocation} onChange={(e)=>setNewNPCLocation(e.target.value)} placeholder="所在地点（可留空）" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white md:col-span-2" />
                     <textarea value={newNPCDesc} onChange={(e)=>setNewNPCDesc(e.target.value)} placeholder="人物描述" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white resize-none h-24 md:col-span-2" />
@@ -643,7 +643,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                   <div className="text-sm font-semibold text-white flex items-center gap-2"><Search size={14} />筛选与搜索</div>
                   <input value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} placeholder="搜索姓名/职业/位置" className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white text-sm" />
                   <div className="flex flex-wrap gap-2">
-                    {['all','alive','dead','poisoned','recruited'].map(f => <button key={f} onClick={()=>setNpcFilter(f as any)} className={`px-3 py-1.5 rounded-lg text-xs ${npcFilter===f?'bg-fuchsia-700 text-white':'bg-zinc-800 text-zinc-300'}`}>{f==='all'?'全部':f==='alive'?'存活':f==='dead'?'已故':f==='poisoned'?'中毒':f==='recruited'?'同行':''}</button>)}
+                    {(['all','alive','dead','poisoned','recruited'] as const).map(f => <button key={f} onClick={()=>setNpcFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs ${npcFilter===f?'bg-fuchsia-700 text-white':'bg-zinc-800 text-zinc-300'}`}>{f==='all'?'全部':f==='alive'?'存活':f==='dead'?'已故':f==='poisoned'?'中毒':f==='recruited'?'同行':''}</button>)}
                   </div>
                 </div>
               </div>
@@ -729,7 +729,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                                   <textarea value={npc.inventory.map(i=>i.name).join('、')} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ inventory: makeItemsFromText('inv', npc.id, e.target.value, 'misc') } })} className="w-full h-16 bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white resize-none" />
                                 </div>
                                 <div className="space-y-2">
-                                  {['health','hunger','thirst','energy'].map((k)=><div key={k}><label className="block text-zinc-400 text-xs mb-1">{k==='health'?'气血':k==='hunger'?'饱腹':k==='thirst'?'口渴':'精力'}</label><input type="range" min={0} max={k==='health'?(npc.stats.maxHealth||100):100} value={(npc.stats as any)[k] || 0} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ stats:{ ...npc.stats, [k]: Number(e.target.value) } } })} className="w-full" /><div className="text-right text-xs text-zinc-500">{Math.round((npc.stats as any)[k] || 0)}</div></div>)}
+                                  {(['health','hunger','thirst','energy'] as const).map((k)=><div key={k}><label className="block text-zinc-400 text-xs mb-1">{k==='health'?'气血':k==='hunger'?'饱腹':k==='thirst'?'口渴':'精力'}</label><input type="range" min={0} max={k==='health'?(npc.stats.maxHealth||100):100} value={npc.stats[k] || 0} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ stats:{ ...npc.stats, [k]: Number(e.target.value) } } })} className="w-full" /><div className="text-right text-xs text-zinc-500">{Math.round(npc.stats[k] || 0)}</div></div>)}
                                   <label className="block text-zinc-400 text-xs">战力</label>
                                   <input type="range" min={0} max={100} value={npc.stats.combat} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ stats:{ ...npc.stats, combat:Number(e.target.value) } } })} className="w-full" />
                                   <label className="block text-zinc-400 text-xs">感知</label>
@@ -757,7 +757,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                                 <select value={npc.romance?.stage || 'none'} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ romance:{ ...(npc.romance||{}), stage:e.target.value } } })} className="w-full bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white">
                                   <option value="none">无</option><option value="interested">心动</option><option value="close">亲近</option><option value="ambiguous">暧昧</option><option value="lover">恋人</option><option value="engaged">婚约</option><option value="married">夫妻</option><option value="broken">决裂</option>
                                 </select>
-                                {(['affinity','attraction','trust','intimacy','commitment','jealousy'] as const).map(key => <div key={key}><label className="block text-zinc-400 text-xs capitalize">{key}</label><input type="range" min={0} max={100} value={(npc.romance as any)?.[key] || 0} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ romance:{ ...(npc.romance||{}), [key]: Number(e.target.value) } } })} className="w-full" /></div>)}
+                                {(['affinity','attraction','trust','intimacy','commitment','jealousy'] as const).map(key => <div key={key}><label className="block text-zinc-400 text-xs capitalize">{key}</label><input type="range" min={0} max={100} value={(npc.romance as Partial<RomanceState>)?.[key] || 0} onChange={(e)=>onUpdate('UPDATE_NPC',{ id:npc.id, updates:{ romance:{ ...(npc.romance||{}), [key]: Number(e.target.value) } } })} className="w-full" /></div>)}
                               </div>
                             </div>
                           )}
@@ -816,7 +816,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                   <div className="text-sm font-semibold text-white flex items-center gap-2"><Plus size={14} />添加物品</div>
                   <div className="grid md:grid-cols-2 gap-3 text-sm">
                     <input value={newItemName} onChange={(e)=>setNewItemName(e.target.value)} placeholder="物品名" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white" />
-                    <select value={newItemType} onChange={(e)=>setNewItemType(e.target.value)} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white">{['misc','food','drink','medicine','weapon','tool','material','clothing','document','container'].map(t=><option key={t} value={t}>{itemTypeLabel(t)}</option>)}</select>
+                    <select value={newItemType} onChange={(e)=>setNewItemType(e.target.value as ItemType)} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white">{['misc','food','drink','medicine','weapon','tool','material','clothing','document','container'].map(t=><option key={t} value={t}>{itemTypeLabel(t)}</option>)}</select>
                     <textarea value={newItemDesc} onChange={(e)=>setNewItemDesc(e.target.value)} placeholder="描述" className="md:col-span-2 bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white resize-none h-24" />
                   </div>
                   <button onClick={handleAddItem} className="px-3 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white text-xs flex items-center gap-1"><Plus size={12} />加入背包</button>
@@ -848,7 +848,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                   <div className="text-sm font-semibold text-white flex items-center gap-2"><MapPin size={14} />新增地点</div>
                   <div className="grid md:grid-cols-2 gap-3 text-sm">
                     <input value={newLocationName} onChange={(e)=>setNewLocationName(e.target.value)} placeholder="地点名" className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white" />
-                    <select value={newLocationType} onChange={(e)=>setNewLocationType(e.target.value as any)} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white">{['outdoor','building','room','underground','vehicle'].map(t=><option key={t} value={t}>{locationTypeLabel(t)}</option>)}</select>
+                    <select value={newLocationType} onChange={(e)=>setNewLocationType(e.target.value as 'room' | 'building' | 'outdoor' | 'underground' | 'vehicle')} className="bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white">{['outdoor','building','room','underground','vehicle'].map(t=><option key={t} value={t}>{locationTypeLabel(t)}</option>)}</select>
                     <textarea value={newLocationDesc} onChange={(e)=>setNewLocationDesc(e.target.value)} placeholder="地点描述" className="md:col-span-2 bg-zinc-950 border border-zinc-700 rounded px-3 py-2 text-white resize-none h-24" />
                   </div>
                   <button onClick={handleAddLocation} className="px-3 py-2 rounded-lg bg-indigo-800 hover:bg-indigo-700 text-white text-xs flex items-center gap-1"><Plus size={12} />添加地点</button>
@@ -906,7 +906,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                 <button onClick={handleAddMonster} className="px-3 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-xs flex items-center gap-1"><Plus size={12} />添加妖魔</button>
               </div>
               <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {(state.monsterTypes || []).map((m:any)=>(
+                {(state.monsterTypes || []).map((m) => (
                   <div key={m.id} className="rounded-xl bg-zinc-900 border border-zinc-800 p-4 space-y-2 text-sm">
                     <div className="flex items-center justify-between"><div className="text-white font-medium">{m.name}</div><span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/40 text-red-300">{m.tier}阶</span></div>
                     <div className="text-xs text-zinc-500 line-clamp-2">{m.description}</div>
@@ -1077,7 +1077,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ state, onUpdate, onClose
                     ].map(([key,label]) => (
                       <label key={key} className="flex items-center justify-between gap-3 rounded-lg bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs text-zinc-300">
                         <span>{label}</span>
-                        <input type="checkbox" checked={(orchestratorSettings as any)[key]} onChange={(e)=>setOrchestratorSettings(prev=>({ ...prev, [key]: e.target.checked }))} />
+                        <input type="checkbox" checked={!!orchestratorSettings[key as keyof OrchestratorSettings]} onChange={(e)=>setOrchestratorSettings(prev=>({ ...prev, [key]: e.target.checked }))} />
                       </label>
                     ))}
                   </div>

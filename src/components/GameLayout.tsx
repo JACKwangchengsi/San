@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { useGame, createLog, createItem } from '../context/GameContext';
+import { useGame, createLog, createItem, type Action } from '../context/GameContext';
 import { getShichen } from '../systems/WorldSimulation';
 import { orchestrateAIResponse, loadOrchestratorSettings } from '../systems/Orchestrator';
 import { useWorldTick } from '../hooks/useWorldTick';
@@ -13,6 +13,7 @@ import { LocationPanel } from './LocationPanel';
 import BirthSettingsPanel from './BirthSettingsPanel';
 import StartMenu from './StartMenu';
 import { NotificationContainer, useNotifications } from './Notification';
+import { logger } from '../utils/logger';
 
 const AIConsole = lazy(() => import('./AIConsole').then(m => ({ default: m.AIConsole })));
 const AdminPanel = lazy(() => import('./AdminPanel').then(m => ({ default: m.AdminPanel })));
@@ -22,7 +23,7 @@ const ShopPanel = lazy(() => import('./ShopPanel'));
 const CultivationPanel = lazy(() => import('./CultivationPanel'));
 const WorldDetailPanel = lazy(() => import('./WorldDetailPanel'));
 const SceneImagePanel = lazy(() => import('./SceneImagePanel'));
-import { BirthSettings, Item, AIResponse, NPC, AIResponseSummary } from '../types/game';
+import { BirthSettings, Buff, CraftingRecipe, Debuff, Injury, Item, Location, AIResponse, NPC, AIResponseSummary, WorldEvent, WorldState, StatKey, RomanceState, RomanceStage, MartialArt, DialogueEntry } from '../types/game';
 import { Settings, UserCog, Send, Map, Package, Users, Bot, Save, RotateCcw, Search, Eye, Moon, Droplets, MessageSquare, Footprints, Sword, Hammer, Shield, Coins, Star, Image as ImageIcon, UserCircle2, RefreshCw, Volume2, VolumeX, Music, Music2 } from 'lucide-react';
 
 type TabType = 'stats' | 'inventory' | 'npcs' | 'map' | 'ai' | 'craft' | 'shop' | 'cultivation' | 'world' | 'scene';
@@ -295,25 +296,26 @@ export const GameLayout: React.FC = () => {
 
       const mergeAIResult = (raw: AIResponse) => {
         const merged: AIResponse = { ...raw };
-        const candidateLocations = [raw.location_change, (raw.world_state_changes as any)?.location]
+        const wsLocation = typeof raw.world_state_changes?.location === 'string' ? raw.world_state_changes.location : undefined;
+        const candidateLocations = [raw.location_change, wsLocation]
           .filter((v): v is string => typeof v === 'string' && !!v.trim());
         if (candidateLocations.length) {
           const unique = Array.from(new Set(candidateLocations.map(s => s.trim())));
           merged.location_change = unique[0];
           if (merged.world_state_changes && 'location' in merged.world_state_changes) {
-            const { location, ...rest } = merged.world_state_changes as any;
-            merged.world_state_changes = rest;
+            const { location, ...rest } = merged.world_state_changes;
+            merged.world_state_changes = rest as Partial<WorldState>;
           }
         }
 
         const rawNewLocations = Array.isArray(raw.new_locations) ? raw.new_locations : [];
-        const extraFromMovement = merged.location_change && !rawNewLocations.some((l) => l?.name === merged.location_change)
-          ? [{ name: merged.location_change } as any]
+        const extraFromMovement: Partial<Location>[] = merged.location_change && !rawNewLocations.some((l) => l?.name === merged.location_change)
+          ? [{ name: merged.location_change }]
           : [];
         merged.new_locations = [...rawNewLocations, ...extraFromMovement].filter((loc, idx, arr) => !!loc?.name && arr.findIndex((x) => x?.name === loc.name) === idx);
 
         if (Array.isArray(raw.npc_updates)) {
-          const mergedNpc: Record<string, { id: string; changes: any }> = {};
+          const mergedNpc: Record<string, { id: string; changes: Partial<NPC> }> = {};
           raw.npc_updates.forEach((u) => {
             const key = u.id;
             const prev = mergedNpc[key] || { id: key, changes: {} };
@@ -335,10 +337,10 @@ export const GameLayout: React.FC = () => {
         const inferredId = `loc_${String(name).replace(/\s+/g, '_').replace(/[^\u4e00-\u9fa5a-zA-Z0-9_]/g, '').toLowerCase()}_${Date.now().toString().slice(-4)}`;
         const inferredType = /镇|城|集|市|铺|楼|馆|驿|客栈|茶肆|医馆|铁匠/.test(name) ? 'building' : /山|谷|峡|林|野|道|崖|峰|渡|河|湖/.test(name) ? 'outdoor' : 'room';
         const sourceLoc = state.locations.find(l => l.name === (sourceLocationName || state.world.location));
-        const newLocation = {
+        const newLocation: Location = {
           id: inferredId,
           name,
-          type: inferredType as any,
+          type: inferredType as Location['type'],
           description: `${name}，一处在江湖行路中被新近踏入的地点。`,
           isExplored: true,
           isLocked: false,
@@ -355,7 +357,7 @@ export const GameLayout: React.FC = () => {
           events: [],
           notes: '由AI剧情自动发现'
         };
-        dispatch({ type: 'ADD_LOCATION', payload: newLocation as any });
+        dispatch({ type: 'ADD_LOCATION', payload: newLocation });
         if (sourceLoc) {
           dispatch({
             type: 'UPDATE_LOCATION',
@@ -366,7 +368,7 @@ export const GameLayout: React.FC = () => {
           });
         }
         addLog(`🗺️ 地图上新增地点：${name}`, 'discovery', 2);
-        return newLocation as any;
+        return newLocation;
       };
 
       const applyAIMovement = (targetName: string) => {
@@ -436,7 +438,7 @@ export const GameLayout: React.FC = () => {
             mergedUpdates.connectedLocations = Array.from(new Set([...(created.connectedLocations || []), ...normalizedConnected]));
           }
           if (Object.keys(mergedUpdates).length) {
-            dispatch({ type: 'UPDATE_LOCATION', payload: { id: created.id, updates: mergedUpdates as any } });
+            dispatch({ type: 'UPDATE_LOCATION', payload: { id: created.id, updates: mergedUpdates as Partial<Location> } });
           }
         });
       }
@@ -469,14 +471,14 @@ export const GameLayout: React.FC = () => {
         mergedData.npc_updates.forEach(update => {
           const npc = state.npcs.find(n => n.id === update.id) || state.npcs.find(n => n.name === update.id);
           if (!npc) return;
-          const mappedChanges: Partial<NPC> = { ...update.changes } as any;
-          if ((mappedChanges as any).status === 'corrupted') (mappedChanges as any).status = 'poisoned';
+          const mappedChanges: Partial<NPC> = { ...update.changes };
+          if (mappedChanges.status === 'corrupted') mappedChanges.status = 'poisoned';
           if (mappedChanges.location && mappedChanges.location !== npc.location) {
             ensureLocationExists(mappedChanges.location, npc.location);
           }
           dispatch({ type: 'UPDATE_NPC', payload: { id: npc.id, updates: mappedChanges } });
           if (mappedChanges.status === 'dead') addLog(`☠️ ${npc.name} 已身亡。`, 'death', 5);
-          else if ((mappedChanges as any).status === 'poisoned') addLog(`⚠️ ${npc.name}似乎中了毒或受了暗伤。`, 'warning', 4);
+          else if (mappedChanges.status === 'poisoned') addLog(`⚠️ ${npc.name}似乎中了毒或受了暗伤。`, 'warning', 4);
           if (mappedChanges.location && mappedChanges.location !== npc.location) {
             changedNpcIds.push(npc.id);
             addLog(`${npc.name}动身前往了${mappedChanges.location}。`, 'system', 2);
@@ -491,14 +493,15 @@ export const GameLayout: React.FC = () => {
           addLog(`遇到了新人物：${npc.name}`, 'event', 3);
         });
       }
-      if (mergedData.player_stat_changes) Object.entries(mergedData.player_stat_changes).forEach(([stat, val]) => { if (typeof val === 'number' && val !== 0) dispatch({ type: 'UPDATE_PLAYER_STAT', payload: { stat: stat as any, value: val } }); });
+      if (mergedData.player_stat_changes) Object.entries(mergedData.player_stat_changes).forEach(([stat, val]) => { if (typeof val === 'number' && val !== 0) dispatch({ type: 'UPDATE_PLAYER_STAT', payload: { stat: stat as StatKey, value: val } }); });
       if (typeof mergedData.time_passed_minutes === 'number' && mergedData.time_passed_minutes > 0) { dispatch({ type: 'ADVANCE_TIME', payload: mergedData.time_passed_minutes }); if (mergedData.time_passed_minutes >= 30) addLog(`⏰ 过去了${Math.floor(mergedData.time_passed_minutes / 60) > 0 ? `${Math.floor(mergedData.time_passed_minutes / 60)}时辰` : `${mergedData.time_passed_minutes}分钟`}。`, 'system', 1); }
       if (mergedData.weather_change) { dispatch({ type: 'UPDATE_WORLD', payload: { weather: { ...state.world.weather, current: mergedData.weather_change } } }); addLog(`天色有变，已转为${weatherLabel(mergedData.weather_change)}。`, 'system', 2); }
       if (mergedData.location_change) {
         applyAIMovement(mergedData.location_change);
       }
       if (mergedData.world_state_changes) {
-        const { location, weather, locationHistory, safeZones, dangerZones, ...safeWorldChanges } = mergedData.world_state_changes as any;
+        const ws = mergedData.world_state_changes;
+        const { location, weather, locationHistory, safeZones, dangerZones, ...safeWorldChanges } = ws;
         if (Object.keys(safeWorldChanges).length) {
           dispatch({ type: 'UPDATE_WORLD', payload: safeWorldChanges });
         }
@@ -541,7 +544,7 @@ export const GameLayout: React.FC = () => {
         if (idx >= 0) {
           currentArts[idx] = { ...currentArts[idx], level: Math.min(10, currentArts[idx].level + Math.max(1, Math.round(mergedData.martial_progress.progress / 10))) };
         } else {
-          currentArts.push({ id: `art_${Date.now()}`, name: mergedData.martial_progress.skill, level: 1, description: 'AI剧情中新领悟的武学', style: 'mixed' as any });
+          currentArts.push({ id: `art_${Date.now()}`, name: mergedData.martial_progress.skill, level: 1, description: 'AI剧情中新领悟的武学', style: 'mixed' as MartialArt['style'] });
         }
         dispatch({ type: 'UPDATE_PLAYER', payload: { martialArts: currentArts } });
         addLog(`🥋 你在${mergedData.martial_progress.skill}上又有进境。`, 'system', 2);
@@ -562,7 +565,7 @@ export const GameLayout: React.FC = () => {
         const currentInjuries = [...(state.player.injuries || [])];
         mergedData.player_injuries.forEach((inj) => {
           if (!inj.name) return;
-          const newInjury: any = {
+          const newInjury: Injury = {
             id: inj.id || `inj_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             name: inj.name,
             bodyPart: inj.bodyPart || '未知部位',
@@ -585,7 +588,7 @@ export const GameLayout: React.FC = () => {
           const eventLog = createLog(`event_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`, `🌍 ${evt.name || '世界事件'}：${evt.description || ''}`, 'event', state.world.time);
           dispatch({ type: 'ADD_LOG', payload: eventLog });
           if (evt.name && evt.description) {
-            const newEvent: any = { id: `we_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: evt.name, description: evt.description, severity: evt.severity || 3, endTime: state.world.time + 1440 * 60 * 1000, startTime: state.world.time, effects: evt.effects || {} };
+            const newEvent: WorldEvent = { id: `we_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, name: evt.name, description: evt.description, type: 'global' as const, severity: (evt.severity || 3) as number, endTime: state.world.time + 1440 * 60 * 1000, startTime: state.world.time, effects: (evt.effects || {}) as Record<string, number>, isActive: true };
             dispatch({ type: 'UPDATE_WORLD', payload: { globalEvents: [...state.world.globalEvents, newEvent] } });
           }
         });
@@ -604,7 +607,7 @@ export const GameLayout: React.FC = () => {
       if (mergedData.recipe_discoveries?.length) {
         mergedData.recipe_discoveries.forEach((recipeName) => {
           if (!recipeName || state.craftingRecipes.some((r) => r.name === recipeName)) return;
-          const newRecipe: any = {
+          const newRecipe: CraftingRecipe = {
             id: `recipe_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             name: recipeName,
             description: `AI剧情中领悟的${recipeName}锻造之法`,
@@ -625,7 +628,7 @@ export const GameLayout: React.FC = () => {
         const currentBuffs = [...(state.player.buffs || [])];
         mergedData.buff_additions.forEach((b) => {
           if (!b.name) return;
-          const newBuff: any = {
+          const newBuff: Buff = {
             id: b.id || `buff_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             name: b.name,
             description: b.description || '',
@@ -644,7 +647,7 @@ export const GameLayout: React.FC = () => {
         const currentDebuffs = [...(state.player.debuffs || [])];
         mergedData.debuff_additions.forEach((d) => {
           if (!d.name) return;
-          const newDebuff: any = {
+          const newDebuff: Debuff = {
             id: d.id || `debuff_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             name: d.name,
             description: d.description || '',
@@ -680,7 +683,7 @@ export const GameLayout: React.FC = () => {
             addLog(`🔴 伤势恶化：${ic.name}`, 'warning', 4);
           } else {
             // 新增伤势
-            const newInjury: any = {
+            const newInjury: Injury = {
               id: ic.id || `inj_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
               name: ic.name,
               bodyPart: ic.bodyPart || '未知部位',
@@ -718,14 +721,14 @@ export const GameLayout: React.FC = () => {
             updates.trust = Math.max(0, Math.min(100, (npc.trust || 0) + rc.trustDelta));
           }
           if (rc.event) {
-            const dialogueHistory = [...(npc.dialogueHistory || []), { speaker: 'system', text: rc.event, timestamp: Date.now() } as any];
-            updates.dialogueHistory = dialogueHistory as any;
+            const dialogueHistory: DialogueEntry[] = [...(npc.dialogueHistory || []), { id: `sys_${Date.now()}`, speaker: 'npc', text: rc.event, timestamp: Date.now() }];
+            updates.dialogueHistory = dialogueHistory;
           }
           if (npc.romance && (rc.romanceStage || typeof rc.affinity === 'number')) {
-            const romanceUpdates: Partial<any> = {};
-            if (rc.romanceStage) romanceUpdates.stage = rc.romanceStage;
+            const romanceUpdates: Partial<RomanceState> = {};
+            if (rc.romanceStage) romanceUpdates.stage = rc.romanceStage as RomanceStage;
             if (typeof rc.affinity === 'number') romanceUpdates.affinity = Math.max(0, Math.min(100, rc.affinity));
-            updates.romance = { ...npc.romance, ...romanceUpdates } as any;
+            updates.romance = { ...npc.romance, ...romanceUpdates };
           }
           if (Object.keys(updates).length) {
             dispatch({ type: 'UPDATE_NPC', payload: { id: npc.id, updates } });
@@ -812,12 +815,12 @@ export const GameLayout: React.FC = () => {
       setIsWaitingAI(false);
       setPlayerInput('');
     } catch (error) {
-      console.error('AI Update Error:', error);
+      logger.game.error('AI Update Error:', error);
       addLog(`【系统错误】处理AI响应时出错：${error instanceof Error ? error.message : '未知错误'}`, 'warning', 5);
     } finally { setIsProcessing(false); }
   }, [dispatch, state, addLog, earnMoney]);
 
-  const handleAdminUpdate = useCallback((type: string, payload: unknown) => { dispatch({ type: type as any, payload } as any); }, [dispatch]);
+  const handleAdminUpdate = useCallback((type: string, payload: unknown) => { dispatch({ type, payload } as Action); }, [dispatch]);
   const handleUseItem = useCallback((item: Item) => { if (item.type === 'device' || item.type === 'container') setSelectedItem(item); else { useItem(item.id); notify.success(`使用了 ${item.name}`); } }, [useItem, notify]);
   const handleDropItem = useCallback((itemId: string) => {
     const item = state.player.inventory.find(i => i.id === itemId);
@@ -850,7 +853,7 @@ export const GameLayout: React.FC = () => {
   const handleBirthSettingsComplete = useCallback((settings: BirthSettings) => {
     const normalizedSettings: BirthSettings = {
       ...settings,
-      origin: (settings.origin === 'beggar' ? 'begger' : settings.origin) as any,
+      origin: (settings.origin === 'beggar' ? 'begger' : settings.origin) as BirthSettings['origin'],
       temperament: settings.temperament || '表面谨慎，内里不甘平庸',
       goal: settings.goal || '先活下去，再寻找立身之本',
       bottomLine: settings.bottomLine || '不愿轻易害无辜之人',

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { GameState, BirthSettings, NPC } from '../types/game';
+import { logger } from '../utils/logger';
 import {
   AlertCircle,
   CheckCircle,
@@ -82,6 +83,7 @@ export interface GeneratedScene {
   id: string;
   prompt: string;
   imageUrl?: string;
+  imageKey?: string;
   timestamp: number;
   location: string;
   weather: string;
@@ -154,9 +156,9 @@ function normalizeEndpoint(url: string) {
   }
   return clean || '/api/comfy';
 }
-function parseWorkflowJson(text: string): Record<string, any> {
-  const raw = safeJsonParse<Record<string, any>>(text || '{}', {});
-  if (raw.prompt && typeof raw.prompt === 'object') return raw.prompt;
+function parseWorkflowJson(text: string): Record<string, unknown> {
+  const raw = safeJsonParse<Record<string, unknown>>(text || '{}', {});
+  if (raw.prompt && typeof raw.prompt === 'object') return raw.prompt as Record<string, unknown>;
   return raw;
 }
 function getStoredPortraitNote(npcId?: string | null) {
@@ -171,33 +173,34 @@ function getStoredPortraitNote(npcId?: string | null) {
 function getStoredPlayerPortraitNote() {
   return String(loadPlayerPortrait()?.note || '').trim();
 }
-function findFirstImageInObject(obj: any): { filename: string; subfolder?: string; type?: string } | null {
+function findFirstImageInObject(obj: unknown): { filename: string; subfolder?: string; type?: string } | null {
   if (!obj || typeof obj !== 'object') return null;
-  if (Array.isArray(obj?.images) && obj.images.length > 0) {
-    const image = obj.images.find((img: any) => img?.filename);
-    if (image?.filename) return image;
+  const o = obj as Record<string, unknown>;
+  if (Array.isArray(o.images) && o.images.length > 0) {
+    const image = (o.images as Array<Record<string, unknown>>).find((img) => img?.filename);
+    if (image?.filename) return { filename: image.filename as string, subfolder: image.subfolder as string | undefined, type: image.type as string | undefined };
   }
-  if (obj.filename && typeof obj.filename === 'string') return { filename: obj.filename, subfolder: obj.subfolder || '', type: obj.type || 'output' };
-  for (const value of Object.values(obj)) {
+  if (o.filename && typeof o.filename === 'string') return { filename: o.filename, subfolder: o.subfolder as string | undefined, type: (o.type as string) || 'output' };
+  for (const value of Object.values(o)) {
     const found = findFirstImageInObject(value);
     if (found) return found;
   }
   return null;
 }
-function detectOutputNodeIds(workflow: Record<string, any>) {
+function detectOutputNodeIds(workflow: Record<string, unknown>) {
   const ids = Object.keys(workflow || {});
   const candidates: string[] = [];
   for (const id of ids) {
-    const node = workflow[id] || {};
+    const node = (workflow[id] as Record<string, unknown>) || {};
     const classType = String(node.class_type || '').toLowerCase();
-    const title = String(node._meta?.title || '').toLowerCase();
+    const title = String((node._meta as Record<string, unknown>)?.title || '').toLowerCase();
     if (/saveimage|previewimage|save image|preview image|imagesaver|saveimagetowebsocket/i.test(`${classType} ${title}`)) candidates.push(id);
-    const inputs = node.inputs || {};
+    const inputs = (node.inputs as Record<string, unknown>) || {};
     if (inputs.filename_prefix !== undefined && /image|save/i.test(`${classType} ${title}`)) candidates.push(id);
   }
   return [...new Set(candidates)];
 }
-function findImageInOutputs(outputs: Record<string, any> | undefined, preferredNodeId?: string) {
+function findImageInOutputs(outputs: Record<string, unknown> | undefined, preferredNodeId?: string) {
   if (!outputs || typeof outputs !== 'object') return null;
   if (preferredNodeId && outputs[preferredNodeId]) {
     const preferred = findFirstImageInObject(outputs[preferredNodeId]);
@@ -231,8 +234,8 @@ async function getPromptState(endpoint: string, promptId: string, preferredOutpu
   const imageResult = entry ? findImageInOutputs(entry.outputs || entry, preferredOutputNodeId) : null;
   const queueRunning = Array.isArray(queue?.queue_running) ? queue.queue_running : [];
   const queuePending = Array.isArray(queue?.queue_pending) ? queue.queue_pending : [];
-  const runningIndex = queueRunning.findIndex((item: any) => String(item?.[1] || item?.prompt_id || item?.id || '') === promptId);
-  const pendingIndex = queuePending.findIndex((item: any) => String(item?.[1] || item?.prompt_id || item?.id || '') === promptId);
+  const runningIndex = queueRunning.findIndex((item: unknown) => String((item as Record<string, unknown>)?.[1] || (item as Record<string, unknown>)?.prompt_id || (item as Record<string, unknown>)?.id || '') === promptId);
+  const pendingIndex = queuePending.findIndex((item: unknown) => String((item as Record<string, unknown>)?.[1] || (item as Record<string, unknown>)?.prompt_id || (item as Record<string, unknown>)?.id || '') === promptId);
   const running = runningIndex >= 0;
   const pending = pendingIndex >= 0;
   const completed = !!entry && !!entry.outputs;
@@ -300,15 +303,15 @@ function autoDetectWorkflowNodes(workflowText: string) {
   let width = 832, height = 512;
   const isNegativeText = (text: string) => /(lowres|worst|bad anatomy|watermark|text|modern|phone|car|gun|sci-fi)/i.test(text || '');
   for (const id of ids) {
-    const node = workflow[id] || {};
+    const node = (workflow[id] as Record<string, unknown>) || {};
     const classType = String(node.class_type || '').toLowerCase();
-    const inputs = node.inputs || {};
+    const inputs = (node.inputs as Record<string, unknown>) || {};
     if (classType === 'cliptextencode') {
       const text = String(inputs.text || '');
       if (!positiveNodeId && text && !isNegativeText(text)) positiveNodeId = id;
-      if (!negativeNodeId && (isNegativeText(text) || /negative/i.test(String(node._meta?.title || '')))) negativeNodeId = id;
+      if (!negativeNodeId && (isNegativeText(text) || /negative/i.test(String((node._meta as Record<string, unknown>)?.title || '')))) negativeNodeId = id;
     }
-    if (!negativeNodeId && /negative/i.test(String(node._meta?.title || '')) && inputs.text !== undefined) negativeNodeId = id;
+    if (!negativeNodeId && /negative/i.test(String((node._meta as Record<string, unknown>)?.title || '')) && inputs.text !== undefined) negativeNodeId = id;
     if (classType === 'emptylatentimage' || (inputs.width !== undefined && inputs.height !== undefined)) {
       if (!widthNodeId) widthNodeId = id;
       if (!heightNodeId) heightNodeId = id;
@@ -321,11 +324,11 @@ function autoDetectWorkflowNodes(workflowText: string) {
     }
   }
   if (!positiveNodeId) {
-    const fallbackText = ids.find((id) => workflow[id]?.inputs?.text !== undefined);
+    const fallbackText = ids.find((id) => ((workflow[id] as Record<string, unknown>)?.inputs as Record<string, unknown>)?.text !== undefined);
     if (fallbackText) positiveNodeId = fallbackText;
   }
   if (!negativeNodeId) {
-    const textNodes = ids.filter((id) => workflow[id]?.inputs?.text !== undefined);
+    const textNodes = ids.filter((id) => ((workflow[id] as Record<string, unknown>)?.inputs as Record<string, unknown>)?.text !== undefined);
     if (textNodes.length > 1) negativeNodeId = textNodes[1];
   }
   const outputCandidates = detectOutputNodeIds(workflow);
@@ -408,9 +411,9 @@ function buildNpcPortraitPromptText(npc: NPC, context: { location: string; timeT
 }
 
 function buildPlayerPortraitPromptText(player: GameState['player'], birthSettings: BirthSettings | null | undefined, context: { location: string; timeText: string; weather: string; story: string; extraNote?: string }) {
-  const gender = genderPrompt((birthSettings?.gender || player.gender) as any);
+  const gender = genderPrompt(birthSettings?.gender || player.gender);
   const age = birthSettings?.age || player.age;
-  const title = getAgeGenderLabel(age, (birthSettings?.gender || player.gender) as any);
+  const title = getAgeGenderLabel(age, birthSettings?.gender || player.gender);
   const originMap: Record<string, string> = { beggar: '流浪乞丐', begger: '流浪乞丐', farmer: '农家子弟', scholar: '落魄书生', soldier: '军户遗孤', merchant: '商贾之后' };
   const memoryMap: Record<string, string> = { webnovel: '熟读网文套路', martial: '懂些现代搏击基础', medical: '懂基础医学与伤口处理', engineer: '有结构与工具思维', history: '熟悉古代社会与人情' };
   const traitMap: Record<string, string> = { resilient: '极其坚韧，吃苦能忍', agile: '机敏灵动，动作轻快', calm: '沉稳冷静，不易慌乱', passionate: '血气旺盛，意志外放', cold: '克制理性，情绪收束' };
@@ -488,7 +491,7 @@ export default function SceneImagePanel({ state, birthSettings, latestStoryText,
     };
   }, []);
   const sceneImageKeySignature = useMemo(
-    () => scenes.map((scene) => `${scene.id}:${String((scene as any).imageKey || '')}`).join('|'),
+    () => scenes.map((scene) => `${scene.id}:${String(scene.imageKey || '')}`).join('|'),
     [scenes]
   );
   useEffect(() => {
@@ -496,7 +499,7 @@ export default function SceneImagePanel({ state, birthSettings, latestStoryText,
     const run = async () => {
       const next: Record<string, string> = {};
       for (const scene of scenes) {
-        const imageKey = (scene as any).imageKey as string | undefined;
+        const imageKey = scene.imageKey;
         if (!imageKey) continue;
         try {
           const url = await getImageObjectUrl(imageKey);
@@ -586,7 +589,7 @@ export default function SceneImagePanel({ state, birthSettings, latestStoryText,
   const buildWorkflow = (promptText: string, mode: 'scene' | 'portrait') => {
     const workflow = JSON.parse(JSON.stringify(parseWorkflowJson(activePreset.workflowApiJson || '{}')));
     if (!Object.keys(workflow).length) throw new Error('请先在当前流程预设中粘贴 ComfyUI API workflow JSON');
-    const setNodeInput = (nodeId: string, key: string, value: any) => { if (!workflow[nodeId]) return; if (!workflow[nodeId].inputs) workflow[nodeId].inputs = {}; workflow[nodeId].inputs[key] = value; };
+    const setNodeInput = (nodeId: string, key: string, value: unknown) => { if (!workflow[nodeId]) return; if (!workflow[nodeId].inputs) workflow[nodeId].inputs = {}; workflow[nodeId].inputs[key] = value; };
     setNodeInput(activePreset.positiveNodeId, 'text', promptText);
     let negativePrompt = activePreset.negativePrompt || DEFAULT_NEGATIVE;
     if (mode === 'portrait') {
@@ -709,7 +712,7 @@ export default function SceneImagePanel({ state, birthSettings, latestStoryText,
       } catch (persistErr) {
         persistedImageKey = undefined;
         runtimeImageUrl = strictImageSafety ? '' : imageUrl;
-        console.warn('图片本地缓存失败，已降级使用运行时URL：', persistErr);
+        logger.image.warn('图片本地缓存失败，已降级使用运行时URL：', persistErr);
       }
       const scene: GeneratedScene = {
         id: `scene_${Date.now()}`,

@@ -1,4 +1,4 @@
-import { AIResponse, GameState, Location, NPC, OrchestratorSettings } from '../types/game';
+import { AIResponse, GameState, Location, NPC, OrchestratorSettings, WorldState } from '../types/game';
 
 export const defaultOrchestratorSettings: OrchestratorSettings = {
   enabled: true,
@@ -136,19 +136,19 @@ function normalizeItems(items: AIResponse['new_items'], strictness: number) {
 
 function mergeNpcUpdates(updates: AIResponse['npc_updates'], state: GameState) {
   if (!Array.isArray(updates)) return [];
-  const map = new Map<string, { id: string; changes: any }>();
+  const map = new Map<string, { id: string; changes: Partial<NPC> }>();
   updates.forEach((entry) => {
     const id = entry.id;
     const npc = state.npcs.find((n) => n.id === id) || state.npcs.find((n) => n.name === id);
     const key = npc?.id || id;
     const prev = map.get(key) || { id: key, changes: {} };
-    const nextChanges = { ...prev.changes, ...(entry.changes || {}) };
-    if ((nextChanges as any).location) {
-      const normalized = sanitizeLocationCandidate(String((nextChanges as any).location), state);
-      if (normalized) (nextChanges as any).location = normalized;
-      else delete (nextChanges as any).location;
+    const nextChanges: Partial<NPC> = { ...prev.changes, ...(entry.changes || {}) };
+    if (nextChanges.location) {
+      const normalized = sanitizeLocationCandidate(String(nextChanges.location), state);
+      if (normalized) nextChanges.location = normalized;
+      else delete nextChanges.location;
     }
-    if ((nextChanges as any).status === 'corrupted') (nextChanges as any).status = 'poisoned';
+    if (nextChanges.status === 'corrupted') nextChanges.status = 'poisoned';
     map.set(key, { id: key, changes: nextChanges });
   });
   return Array.from(map.values());
@@ -210,11 +210,11 @@ export function orchestrateAIResponse(raw: AIResponse, state: GameState, setting
   const player_stat_changes = normalizePlayerStats(raw.player_stat_changes);
   const new_locations = mergeLocations(raw.new_locations, location_change, state);
 
-  const world_state_changes = raw.world_state_changes ? { ...raw.world_state_changes } : undefined;
+  const world_state_changes: Partial<WorldState> | undefined = raw.world_state_changes ? { ...raw.world_state_changes } : undefined;
   if (world_state_changes) {
-    delete (world_state_changes as any).location;
+    delete (world_state_changes as Partial<WorldState>).location;
     if (world_state_changes.weather && typeof world_state_changes.weather === 'object') {
-      (world_state_changes as any).weather = {
+      (world_state_changes as Partial<WorldState>).weather = {
         ...state.world.weather,
         ...world_state_changes.weather,
       };

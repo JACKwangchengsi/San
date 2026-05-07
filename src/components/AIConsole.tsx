@@ -650,7 +650,7 @@ export const AIConsole: React.FC<AIConsoleProps> = ({ state, lastAction, onUpdat
     <div className="space-y-3 h-full flex flex-col">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-purple-400 font-bold"><Brain size={16} className="animate-pulse" /><span>AI 引擎</span>{apiStatus === 'connected' && <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}</div>
-        <div className="flex gap-1">{['chat', 'text', 'json', 'web'].map((mode) => <button key={mode} onClick={() => setInputMode(mode as any)} className={`px-2 py-1 rounded text-[10px] transition ${inputMode === mode ? 'bg-purple-600 text-white' : 'text-zinc-500 hover:bg-zinc-800'}`}>{mode === 'chat' ? '💬聊天' : mode === 'text' ? '📝文本' : mode === 'json' ? '{}JSON' : '🌐网页'}</button>)}</div>
+        <div className="flex gap-1">{(['chat', 'text', 'json', 'web'] as const).map((mode) => <button key={mode} onClick={() => setInputMode(mode)} className={`px-2 py-1 rounded text-[10px] transition ${inputMode === mode ? 'bg-purple-600 text-white' : 'text-zinc-500 hover:bg-zinc-800'}`}>{mode === 'chat' ? '💬聊天' : mode === 'text' ? '📝文本' : mode === 'json' ? '{}JSON' : '🌐网页'}</button>)}</div>
       </div>
 
       <div className="bg-zinc-800/60 rounded-lg p-2 space-y-1.5">

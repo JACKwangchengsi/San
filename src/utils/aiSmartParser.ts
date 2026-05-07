@@ -7,7 +7,7 @@
  * 4. 更智能地将 AI 生成的未知物品归类到武侠世界体系中
  */
 
-import { AIResponse, Buff, Debuff, GameState, Injury, Item, NPC } from '../types/game';
+import { AIResponse, Buff, Debuff, GameState, Injury, Item, ItemEffect, NPC, StatKey, WeatherType, WorldState } from '../types/game';
 
 const THINKING_PATTERNS = [
   /<think>[\s\S]*?<\/think>/gi,
@@ -181,28 +181,28 @@ function extractStringField(raw: string, fieldNames: string[]): string {
   return '';
 }
 
-function safeJsonParse(raw: string): any | null {
+function safeJsonParse(raw: string): unknown {
   const firstBrace = raw.indexOf('{');
   const lastBrace = raw.lastIndexOf('}');
   if (firstBrace === -1 || lastBrace <= firstBrace) return null;
   const jsonCandidate = raw.slice(firstBrace, lastBrace + 1);
   try {
-    return JSON.parse(jsonCandidate);
+    return JSON.parse(jsonCandidate) as unknown;
   } catch {
     return null;
   }
 }
 
-function deepExtractStoryText(raw: string): { storyText: string; jsonData: any | null } {
+function deepExtractStoryText(raw: string): { storyText: string; jsonData: unknown } {
   const cleanedRaw = removeThinkingContent(raw || '')
     .replace(/```json\s*/gi, '')
     .replace(/```\s*/g, '')
     .trim();
 
-  const jsonData = safeJsonParse(cleanedRaw);
+  const jsonData = safeJsonParse(cleanedRaw) as Record<string, unknown> | null;
   if (jsonData) {
     const direct = [jsonData.story_text, jsonData.story, jsonData.txt, jsonData.text, jsonData.content, jsonData.narrative, jsonData.message, jsonData.reply]
-      .find((v) => typeof v === 'string' && v.trim().length > 3);
+      .find((v): v is string => typeof v === 'string' && v.trim().length > 3);
     if (direct) return { storyText: cleanAIText(direct), jsonData };
   }
 
@@ -425,7 +425,7 @@ function extractStatChanges(text: string): Partial<Record<string, number>> {
 
 function extractNPCUpdates(text: string, existingNPCs: NPC[]) {
   const source = cleanAIText(text);
-  const updates: Array<{ id: string; changes: any }> = [];
+  const updates: Array<{ id: string; changes: Partial<NPC> }> = [];
   existingNPCs.forEach((npc) => {
     if (!source.includes(npc.name)) return;
     Object.entries(NPC_STATUS_KEYWORDS).forEach(([status, kws]) => {
@@ -562,7 +562,7 @@ function extractMoneyChanges(text: string) {
   ] as const;
 
   patterns.forEach((entry) => {
-    const { re, sign, kind, cn: isCn, fixed } = entry as any;
+    const { re, sign, kind, cn: isCn = false, fixed = undefined } = entry as { re: RegExp; sign: number; kind: 'silver' | 'copper' | 'both'; cn?: boolean; fixed?: number };
     const matches = Array.from(source.matchAll(re));
     matches.forEach((m) => {
       if (fixed !== undefined) {
@@ -597,11 +597,12 @@ function extractMoneyChanges(text: string) {
   return { silver: Math.round(silver), copper: Math.round(copper) };
 }
 
-function extractDialogueFromJson(jsonData: any) {
-  if (!Array.isArray(jsonData?.dialogue)) return [];
-  return jsonData.dialogue
-    .filter((d: any) => d && typeof d.speaker === 'string' && typeof d.text === 'string')
-    .map((d: any) => ({ speaker: d.speaker.trim(), text: d.text.trim(), mood: typeof d.mood === 'string' ? d.mood.trim() : undefined }));
+function extractDialogueFromJson(jsonData: unknown) {
+  const jd = jsonData as Record<string, unknown> | null;
+  if (!Array.isArray(jd?.dialogue)) return [];
+  return (jd.dialogue as Array<Record<string, unknown>>)
+    .filter((d) => d && typeof d.speaker === 'string' && typeof d.text === 'string')
+    .map((d) => ({ speaker: (d.speaker as string).trim(), text: (d.text as string).trim(), mood: typeof d.mood === 'string' ? (d.mood as string).trim() : undefined }));
 }
 
 function stripDialogueDuplication(storyText: string, dialogue: Array<{ speaker: string; text: string }>) {
@@ -696,7 +697,7 @@ function extractBuffDebuffChanges(text: string): { buffs: Partial<Buff>[]; debuf
         id: `buff_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         name: p.name || m[0],
         description: `${m[0]}效果持续中`,
-        effects: [{ stat: p.effect.stat as any, value: p.effect.value, duration: p.defaultDuration }],
+        effects: [{ stat: p.effect.stat as StatKey, value: p.effect.value, duration: p.defaultDuration }],
         duration: p.defaultDuration,
         startTime: Date.now(),
         source: 'AI剧情',
@@ -716,7 +717,7 @@ function extractBuffDebuffChanges(text: string): { buffs: Partial<Buff>[]; debuf
         id: `debuff_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         name: p.name,
         description: `${m[0]}缠身`,
-        effects: [{ stat: p.stat as any, value: p.value, duration: p.defaultDuration }],
+        effects: [{ stat: p.stat as StatKey, value: p.value, duration: p.defaultDuration }],
         duration: p.defaultDuration,
         startTime: Date.now(),
         source: 'AI剧情',
@@ -840,19 +841,24 @@ export function smartParseAIResponse(
   economyChanges?: { marketIndex?: number; taxRate?: number; resourceScarcity?: number };
   bodyConditionChanges?: { temperature?: number; fatigue?: number };
 } {
-  const { storyText, jsonData } = deepExtractStoryText(rawText);
+  const { storyText, jsonData: rawJsonData } = deepExtractStoryText(rawText);
+  const jsonData = rawJsonData as Record<string, unknown> | null;
   const dialogue = extractDialogueFromJson(jsonData);
   const cleanedStory = stripDialogueDuplication(storyText, dialogue);
 
   const jsonItems = Array.isArray(jsonData?.new_items)
-    ? jsonData.new_items
-        .filter((i: any) => i?.name && isValidItemName(i.name))
-        .map((i: any) => ({
-          ...i,
-          name: normalizeCandidateName(i.name),
-          type: i.type || getItemType(i.name),
-          description: i.description || getItemDescription(i.name, i.type || getItemType(i.name)),
-        }))
+    ? (jsonData.new_items as Array<Record<string, unknown>>)
+        .filter((i) => i?.name && typeof i.name === 'string' && isValidItemName(i.name as string))
+        .map((i) => {
+          const itemName = (i.name as string);
+          const itemType = (i.type as string) || getItemType(itemName);
+          return {
+            ...i,
+            name: normalizeCandidateName(itemName),
+            type: itemType,
+            description: (i.description as string) || getItemDescription(itemName, itemType),
+          };
+        })
     : [];
 
   const parsedItems = extractItems(cleanedStory, gameState.player.inventory).map((i) => ({
@@ -860,11 +866,15 @@ export function smartParseAIResponse(
     ...i,
   }));
 
-  const dedupItemMap = new Map<string, any>();
+  const dedupItemMap = new Map<string, Record<string, unknown>>();
   [...jsonItems, ...parsedItems].forEach((item) => {
-    const name = normalizeCandidateName(item.name || '');
+    const rawName = (item.name as string) || '';
+    const name = normalizeCandidateName(rawName);
     if (!isValidItemName(name)) return;
-    if (!dedupItemMap.has(name)) dedupItemMap.set(name, { ...item, name, type: item.type || getItemType(name), description: item.description || getItemDescription(name, item.type || getItemType(name)) });
+    if (!dedupItemMap.has(name)) {
+      const itemType = (item.type as string) || getItemType(name);
+      dedupItemMap.set(name, { ...item, name, type: itemType, description: (item.description as string) || getItemDescription(name, itemType) });
+    }
   });
 
   const jsonStatChanges = typeof jsonData?.player_stat_changes === 'object' && jsonData?.player_stat_changes
@@ -885,33 +895,42 @@ export function smartParseAIResponse(
   const { silver, copper } = extractMoneyChanges(cleanedStory);
 
   // 合并 JSON 声明的 removed_items 和从文本中提取的消耗物品
-  const jsonRemoved: string[] = Array.isArray(jsonData?.removed_items) ? jsonData.removed_items : [];
+  const jsonRemoved: string[] = Array.isArray(jsonData?.removed_items) ? (jsonData.removed_items as string[]) : [];
   const textRemoved = extractRemovedItems(cleanedStory, gameState.player.inventory);
   const mergedRemoved = [...new Set([...jsonRemoved, ...textRemoved])];
+
+  // 对 jsonData 动态属性做安全定型（AI JSON 解析器天然处理未知结构）
+  const jd = jsonData as Record<string, unknown> | null;
 
   return {
     story_text: cleanedStory || '（AI未返回有效故事文本）',
     dialogue,
-    time_passed_minutes: typeof jsonData?.time_passed_minutes === 'number' ? jsonData.time_passed_minutes : extractTimeChange(cleanedStory),
-    location_change: jsonData?.location_change || extractLocationChange(cleanedStory, gameState),
-    weather_change: jsonData?.weather_change || extractWeatherChange(cleanedStory) || undefined,
+    time_passed_minutes: typeof jd?.time_passed_minutes === 'number' ? (jd.time_passed_minutes as number) : extractTimeChange(cleanedStory),
+    location_change: (typeof jd?.location_change === 'string' ? jd.location_change as string : undefined) || extractLocationChange(cleanedStory, gameState),
+    weather_change: ((typeof jd?.weather_change === 'string' ? jd.weather_change : undefined) || extractWeatherChange(cleanedStory) || undefined) as WeatherType | null | undefined,
     new_items: Array.from(dedupItemMap.values()),
     removed_items: mergedRemoved,
     npc_updates: npcUpdates,
-    new_npcs: Array.isArray(jsonData?.new_npcs) ? jsonData.new_npcs : [],
+    new_npcs: Array.isArray(jd?.new_npcs) ? (jd.new_npcs as AIResponse['new_npcs']) : [],
     player_stat_changes: playerStatChanges,
-    discoveries: Array.isArray(jsonData?.discoveries) ? jsonData.discoveries : [],
-    choices: Array.isArray(jsonData?.choices) ? jsonData.choices : [],
-    world_state_changes: typeof jsonData?.world_state_changes === 'object' ? jsonData.world_state_changes : undefined,
-    flags: typeof jsonData?.flags === 'object' ? jsonData.flags : undefined,
-    reputationChange: typeof jsonData?.reputation_change === 'number' ? jsonData.reputation_change : reputation,
-    righteousnessChange: typeof jsonData?.righteousness_change === 'number' ? jsonData.righteousness_change : righteousness,
-    silverChange: typeof jsonData?.money_change?.silver === 'number' ? jsonData.money_change.silver : silver,
-    copperChange: typeof jsonData?.money_change?.copper === 'number' ? jsonData.money_change.copper : copper,
-    martialArtsProgress: jsonData?.martial_progress || extractMartialArtsProgress(cleanedStory),
-    realmChange: jsonData?.realm_breakthrough || extractRealmChange(cleanedStory),
+    discoveries: Array.isArray(jd?.discoveries) ? (jd.discoveries as string[]) : [],
+    choices: Array.isArray(jd?.choices) ? (jd.choices as AIResponse['choices']) : [],
+    world_state_changes: typeof jd?.world_state_changes === 'object' ? (jd.world_state_changes as Partial<WorldState>) : undefined,
+    flags: typeof jd?.flags === 'object' ? (jd.flags as Record<string, string | number | boolean>) : undefined,
+    reputationChange: typeof jd?.reputation_change === 'number' ? (jd.reputation_change as number) : reputation,
+    righteousnessChange: typeof jd?.righteousness_change === 'number' ? (jd.righteousness_change as number) : righteousness,
+    silverChange: (() => {
+      const mc = jd?.money_change as Record<string, unknown> | undefined;
+      return typeof mc?.silver === 'number' ? (mc.silver as number) : silver;
+    })(),
+    copperChange: (() => {
+      const mc = jd?.money_change as Record<string, unknown> | undefined;
+      return typeof mc?.copper === 'number' ? (mc.copper as number) : copper;
+    })(),
+    martialArtsProgress: (typeof jd?.martial_progress === 'object' && jd.martial_progress ? jd.martial_progress as { skill: string; progress: number } : undefined) || extractMartialArtsProgress(cleanedStory),
+    realmChange: (typeof jd?.realm_breakthrough === 'object' && jd.realm_breakthrough ? jd.realm_breakthrough as { newRealm: string; level: number } : undefined) || extractRealmChange(cleanedStory),
     factionReputationChanges: (() => {
-      const jsonFaction = Array.isArray(jsonData?.faction_reputation_changes) ? jsonData.faction_reputation_changes : [];
+      const jsonFaction = Array.isArray(jd?.faction_reputation_changes) ? (jd.faction_reputation_changes as Array<{ faction: string; delta: number }>) : [];
       const textFaction = extractFactionReputationChanges(cleanedStory);
       const merged = new Map<string, number>();
       [...jsonFaction, ...textFaction].forEach((f) => {
@@ -920,38 +939,38 @@ export function smartParseAIResponse(
       return Array.from(merged.entries()).map(([faction, delta]) => ({ faction, delta }));
     })(),
     recipeDiscoveries: (() => {
-      const jsonRecipes: string[] = Array.isArray(jsonData?.recipe_discoveries) ? jsonData.recipe_discoveries : [];
+      const jsonRecipes: string[] = Array.isArray(jd?.recipe_discoveries) ? (jd.recipe_discoveries as string[]) : [];
       const textRecipes = extractRecipeDiscoveries(cleanedStory);
       return [...new Set([...jsonRecipes, ...textRecipes])];
     })(),
     buffAdditions: (() => {
-      const jsonBuffs = Array.isArray(jsonData?.buff_additions) ? jsonData.buff_additions : [];
+      const jsonBuffs = Array.isArray(jd?.buff_additions) ? (jd.buff_additions as Partial<Buff>[]) : [];
       const { buffs: textBuffs } = extractBuffDebuffChanges(cleanedStory);
       return [...jsonBuffs, ...textBuffs];
     })(),
     debuffAdditions: (() => {
-      const jsonDebuffs = Array.isArray(jsonData?.debuff_additions) ? jsonData.debuff_additions : [];
+      const jsonDebuffs = Array.isArray(jd?.debuff_additions) ? (jd.debuff_additions as Partial<Debuff>[]) : [];
       const { debuffs: textDebuffs } = extractBuffDebuffChanges(cleanedStory);
       return [...jsonDebuffs, ...textDebuffs];
     })(),
     injuryChanges: (() => {
-      const jsonInjuries = Array.isArray(jsonData?.injury_changes) ? jsonData.injury_changes : [];
+      const jsonInjuries = Array.isArray(jd?.injury_changes) ? (jd.injury_changes as (Partial<Injury> & { healed?: boolean })[]) : [];
       const textInjuries = extractInjuryChanges(cleanedStory);
       return [...jsonInjuries, ...textInjuries];
     })(),
     npcRelationshipChanges: (() => {
-      const jsonRels = Array.isArray(jsonData?.npc_relationship_changes) ? jsonData.npc_relationship_changes : [];
+      const jsonRels = Array.isArray(jd?.npc_relationship_changes) ? (jd.npc_relationship_changes as Array<Record<string, unknown>>) : [];
       const textRels = extractNPCRelationshipChanges(cleanedStory, gameState);
-      const merged = new Map<string, any>();
+      const merged = new Map<string, Record<string, unknown>>();
       [...jsonRels, ...textRels].forEach((r) => {
-        const key = r.npcId || r.npcName || 'unknown';
+        const key = (r.npcId as string) || (r.npcName as string) || 'unknown';
         const prev = merged.get(key);
         if (prev) {
           merged.set(key, {
             ...prev,
-            relationDelta: (prev.relationDelta || 0) + (r.relationDelta || 0),
-            trustDelta: (prev.trustDelta || 0) + (r.trustDelta || 0),
-            affinity: (prev.affinity || 0) + (r.affinity || 0),
+            relationDelta: ((prev.relationDelta as number) || 0) + ((r.relationDelta as number) || 0),
+            trustDelta: ((prev.trustDelta as number) || 0) + ((r.trustDelta as number) || 0),
+            affinity: ((prev.affinity as number) || 0) + ((r.affinity as number) || 0),
             romanceStage: r.romanceStage || prev.romanceStage,
           });
         } else {
@@ -961,13 +980,13 @@ export function smartParseAIResponse(
       return Array.from(merged.values());
     })(),
     economyChanges: (() => {
-      const jsonEcon = typeof jsonData?.economy_changes === 'object' ? jsonData.economy_changes : undefined;
+      const jsonEcon = typeof jd?.economy_changes === 'object' ? (jd.economy_changes as Record<string, unknown>) : undefined;
       const textEcon = extractEconomyChanges(cleanedStory);
       if (!jsonEcon && !textEcon) return undefined;
       return { ...textEcon, ...jsonEcon };
     })(),
     bodyConditionChanges: (() => {
-      const jsonBody = typeof jsonData?.body_condition_changes === 'object' ? jsonData.body_condition_changes : undefined;
+      const jsonBody = typeof jd?.body_condition_changes === 'object' ? (jd.body_condition_changes as Record<string, unknown>) : undefined;
       const textBody = extractBodyConditionChanges(cleanedStory);
       if (!jsonBody && !textBody) return undefined;
       return { ...textBody, ...jsonBody };
